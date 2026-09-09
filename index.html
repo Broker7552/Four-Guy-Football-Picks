@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Four-Man Football Pool</title>
+<style>
+:root{--navy:#0f172a;--blue:#2563eb;--green:#16a34a;--red:#dc2626;--muted:#64748b;--bg:#f8fafc;--line:#e2e8f0}
+*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:#0f172a}
+header{background:linear-gradient(135deg,#0f172a,#1e3a8a);color:#fff;padding:22px 18px}.wrap{max-width:1200px;margin:auto;padding:16px}
+header h1{margin:0 0 5px;font-size:25px}header p{margin:0;color:#dbeafe}
+.tabs{display:flex;gap:8px;overflow:auto;margin-bottom:16px}.tab{border:1px solid var(--line);background:#fff;padding:10px 15px;border-radius:10px;font-weight:700;white-space:nowrap;cursor:pointer}.tab.active{background:var(--blue);color:#fff;border-color:var(--blue)}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:16px;box-shadow:0 2px 10px rgba(15,23,42,.04)}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}@media(max-width:700px){.grid4{grid-template-columns:repeat(2,1fr)}}
+.player{padding:11px;border:2px solid var(--line);border-radius:10px;background:#fff;font-weight:800;cursor:pointer}.player.active{border-color:var(--blue);background:#eff6ff;color:#1d4ed8}
+.badge{display:inline-block;padding:4px 8px;border-radius:999px;background:#eef2ff;color:#3730a3;font-size:12px;font-weight:800}
+.notice{padding:12px;border-radius:10px;background:#eff6ff;border:1px solid #bfdbfe;margin:10px 0}.warn{background:#fff7ed;border-color:#fed7aa;color:#9a3412}
+table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:9px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{background:#f8fafc}.scroll{overflow:auto}
+.game{border:1px solid var(--line);border-radius:12px;padding:13px;margin:10px 0;background:#fff}.gamehead{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}.match{font-size:16px;font-weight:800}.meta{font-size:12px;color:var(--muted);margin-top:4px}
+.pickrow{display:flex;gap:8px;margin-top:11px}.pickbtn{flex:1;border:2px solid #cbd5e1;background:#fff;border-radius:10px;padding:11px 8px;font-weight:700;cursor:pointer}.pickbtn.selected{border-color:var(--blue);background:#dbeafe;color:#1d4ed8;font-weight:900;box-shadow:0 0 0 2px #93c5fd inset}.check{display:none}.pickbtn.selected .check{display:inline}
+.resultwin{color:var(--green);font-weight:900}.resultloss{color:var(--red);font-weight:900}.small{font-size:12px;color:var(--muted)}.money{font-weight:900}.pos{color:var(--green)}.neg{color:var(--red)}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}@media(max-width:700px){.kpis{grid-template-columns:repeat(2,1fr)}}.kpi{background:#f8fafc;border:1px solid var(--line);border-radius:10px;padding:12px}.kpi b{font-size:22px;display:block}
+button.primary{background:var(--blue);color:#fff;border:0;border-radius:10px;padding:11px 16px;font-weight:800;cursor:pointer}.hidden{display:none}footer{padding:25px 16px;color:var(--muted);font-size:12px;text-align:center}
+</style></head>
+<body>
+<header><div class="wrap"><h1>Four-Man Football Pool</h1><p>Scott • Ross • Ken • Jim | Historical Week 1 + current pick board</p></div></header>
+<div class="wrap">
+<div class="tabs">
+<button class="tab active" onclick="showTab('home',this)">Dashboard</button>
+<button class="tab" onclick="showTab('history',this)">Week 1 Historical</button>
+<button class="tab" onclick="showTab('picks',this)">Current Picks</button>
+<button class="tab" onclick="showTab('rules',this)">Rules</button>
+</div>
+
+<section id="home" class="tabpage">
+<div class="card"><h2>Season standings</h2>
+<div class="kpis">
+<div class="kpi"><span>1st</span><b>Ken</b><span>10–6 • +$24</span></div>
+<div class="kpi"><span>2nd</span><b>Ross</b><span>9–7 • −$4</span></div>
+<div class="kpi"><span>T-3rd</span><b>Scott</b><span>8–8 • −$10</span></div>
+<div class="kpi"><span>T-3rd</span><b>Jim</b><span>8–8 • −$10</span></div>
+</div>
+<div class="notice"><b>Week 1 is preserved exactly as played.</b> It contains 16 college games and no NFL games in your pool. The normal six-game college format begins with the next pool week.</div>
+</div>
+<div class="card"><h2>This week's NFL board</h2><p class="small">Wednesday and Thursday games are excluded. Sunday games are 1 point; Sunday Night and Monday Night are 2 points.</p><p><span class="badge">Spreads locked Tuesday midnight</span> <span class="badge">Picks due Thursday midnight</span></p></div>
+</section>
+
+<section id="history" class="tabpage hidden"><div class="card">
+<h2>Week 1 — Historical Record</h2><p class="small">16 college games • actual picks preserved • ATS graded from the spreads on the original sheet.</p>
+<div class="scroll"><table><thead><tr><th>Game</th><th>Date / Time</th><th>Location</th><th>Final</th><th>ATS winner</th><th>Ross</th><th>Scott</th><th>Jim</th><th>Ken</th></tr></thead><tbody id="historyBody"></tbody></table></div>
+</div></section>
+
+<section id="picks" class="tabpage hidden">
+<div class="card"><h2>Current Picks</h2>
+<div class="notice warn"><b>Prototype privacy note:</b> this file stores picks in the browser. A permanent shared website will use a server/database so picks are genuinely private until Thursday midnight.</div>
+<div class="grid4" id="players"></div><p id="deadlineText" class="small"></p></div>
+<div class="card"><h2>College Football — 6 Common Games</h2><p class="small">The weekly representative will enter the six common games. These six slots are ready to be populated.</p><div id="collegeSlots"></div></div>
+<div class="card"><h2>NFL — Eligible Games</h2><p class="small">Wednesday and Thursday are omitted. Sunday Night and Monday Night are worth 2 points.</p><div id="nflBoard"></div>
+<button class="primary" onclick="savePicks()">Save My Picks</button> <span id="saveMsg" class="small"></span></div>
+</section>
+
+<section id="rules" class="tabpage hidden"><div class="card"><h2>Official Pool Rules</h2>
+<ul>
+<li>Players: Scott, Ross, Ken, Jim.</li><li>College: six common games selected by the weekly representative.</li>
+<li>NFL: all Sunday games plus Sunday Night and Monday Night; Wednesday and Thursday games excluded.</li>
+<li>College and regular Sunday NFL games = <b>1 point</b>.</li><li>Sunday Night NFL and Monday Night NFL = <b>2 points</b>.</li>
+<li>Spreads lock Tuesday at midnight.</li><li>Picks are due Thursday at midnight.</li><li>Picks remain hidden from other players until after Thursday midnight.</li>
+<li>Late/no pick: all favorites automatically + a <b>5-point penalty</b>.</li>
+<li>College anti-clone: at the deadline, if all four picked the same side, randomly flip one player's pick.</li>
+<li>Weekly payout: 1st +$24, 2nd −$4, 3rd −$8, 4th −$12.</li><li>Ties: combine the payouts for tied positions and split equally.</li>
+<li>Season standings track cumulative W-L and money won/lost.</li>
+</ul></div></section>
+</div><footer>Four-Man Football Pool prototype</footer>
+
+<script>
+const HIST=[{"date": "Aug 29", "time": "12:00 PM PT", "venue": "Los Angeles Memorial Coliseum — Los Angeles, CA", "fav": "USC", "spread": -38.5, "dog": "San José State", "scoreFav": 42, "scoreDog": 26, "picks": {"Ross": "USC", "Scott": "USC", "Jim": "San José State", "Ken": "USC"}}, {"date": "Aug 29", "time": "12:00 PM ET", "venue": "Amon G. Carter Stadium — Fort Worth, TX", "fav": "TCU", "spread": -6.5, "dog": "North Carolina", "scoreFav": 10, "scoreDog": 15, "picks": {"Ross": "TCU", "Scott": "North Carolina", "Jim": "TCU", "Ken": "North Carolina"}}, {"date": "Aug 29", "time": "3:30 PM ET", "venue": "Scott Stadium — Charlottesville, VA", "fav": "Virginia", "spread": -5.5, "dog": "NC State", "scoreFav": 34, "scoreDog": 8, "picks": {"Ross": "Virginia", "Scott": "Virginia", "Jim": "Virginia", "Ken": "NC State"}}, {"date": "Aug 29", "time": "4:00 PM PT", "venue": "Stanford Stadium — Stanford, CA", "fav": "Stanford", "spread": -6.5, "dog": "Hawaiʻi", "scoreFav": 37, "scoreDog": 27, "picks": {"Ross": "Stanford", "Scott": "Hawaiʻi", "Jim": "Stanford", "Ken": "Stanford"}}, {"date": "Aug 29", "time": "10:00 PM ET", "venue": "Allegiant Stadium — Las Vegas, NV", "fav": "UNLV", "spread": -5.5, "dog": "Memphis", "scoreFav": 21, "scoreDog": 27, "picks": {"Ross": "Memphis", "Scott": "UNLV", "Jim": "UNLV", "Ken": "Memphis"}}, {"date": "Sep 3", "time": "8:00 PM ET", "venue": "Bobby Dodd Stadium — Atlanta, GA", "fav": "Georgia Tech", "spread": -7.0, "dog": "Colorado", "scoreFav": 13, "scoreDog": 14, "picks": {"Ross": "Colorado", "Scott": "Colorado", "Jim": "Georgia Tech", "Ken": "Colorado"}}, {"date": "Sep 4", "time": "9:00 PM ET", "venue": "Stanford Stadium — Stanford, CA", "fav": "Miami (FL)", "spread": -24.5, "dog": "Stanford", "scoreFav": 45, "scoreDog": 6, "picks": {"Ross": "Stanford", "Scott": "Miami (FL)", "Jim": "Stanford", "Ken": "Stanford"}}, {"date": "Sep 5", "time": "7:00 PM ET", "venue": "Bryant-Denny Stadium — Tuscaloosa, AL", "fav": "Alabama", "spread": -28.5, "dog": "East Carolina", "scoreFav": 48, "scoreDog": 10, "picks": {"Ross": "Alabama", "Scott": "East Carolina", "Jim": "Alabama", "Ken": "East Carolina"}}, {"date": "Sep 5", "time": "12:00 PM ET", "venue": "TDECU Stadium — Houston, TX", "fav": "Houston", "spread": -20.5, "dog": "Oregon State", "scoreFav": 33, "scoreDog": 20, "picks": {"Ross": "Houston", "Scott": "Houston", "Jim": "Oregon State", "Ken": "Oregon State"}}, {"date": "Sep 5", "time": "3:30 PM ET", "venue": "Mercedes-Benz Stadium — Atlanta, GA", "fav": "Auburn", "spread": -7.0, "dog": "Baylor", "scoreFav": 17, "scoreDog": 16, "picks": {"Ross": "Auburn", "Scott": "Baylor", "Jim": "Auburn", "Ken": "Baylor"}}, {"date": "Sep 5", "time": "7:30 PM ET", "venue": "Tiger Stadium — Baton Rouge, LA", "fav": "LSU", "spread": -9.5, "dog": "Clemson", "scoreFav": 51, "scoreDog": 10, "picks": {"Ross": "LSU", "Scott": "LSU", "Jim": "LSU", "Ken": "Clemson"}}, {"date": "Sep 5", "time": "3:30 PM ET", "venue": "Nippert Stadium — Cincinnati, OH", "fav": "Cincinnati", "spread": -7.5, "dog": "Boston College", "scoreFav": 34, "scoreDog": 15, "picks": {"Ross": "Cincinnati", "Scott": "Boston College", "Jim": "Boston College", "Ken": "Cincinnati"}}, {"date": "Sep 5", "time": "10:30 PM ET", "venue": "California Memorial Stadium — Berkeley, CA", "fav": "California", "spread": -1.5, "dog": "UCLA", "scoreFav": 24, "scoreDog": 45, "picks": {"Ross": "UCLA", "Scott": "California", "Jim": "California", "Ken": "UCLA"}}, {"date": "Sep 6", "time": "7:30 PM ET", "venue": "Nissan Stadium — Nashville, TN", "fav": "Ole Miss", "spread": -6.5, "dog": "Louisville", "scoreFav": 41, "scoreDog": 38, "picks": {"Ross": "Ole Miss", "Scott": "Louisville", "Jim": "Louisville", "Ken": "Louisville"}}, {"date": "Sep 6", "time": "7:30 PM ET", "venue": "Lambeau Field — Green Bay, WI", "fav": "Notre Dame", "spread": -20.5, "dog": "Wisconsin", "scoreFav": 41, "scoreDog": 13, "picks": {"Ross": "Notre Dame", "Scott": "Notre Dame", "Jim": "Notre Dame", "Ken": "Wisconsin"}}, {"date": "Sep 7", "time": "7:30 PM ET", "venue": "Doak Campbell Stadium — Tallahassee, FL", "fav": "SMU", "spread": -2.5, "dog": "Florida State", "scoreFav": 27, "scoreDog": 24, "picks": {"Ross": "Florida State", "Scott": "Florida State", "Jim": "Florida State", "Ken": "SMU"}}];
+const NFL=[["Sep 13", "1:00 PM ET", "Bank of America Stadium — Charlotte, NC", "Chicago Bears", "-3.0", "Carolina Panthers", 1], ["Sep 13", "1:00 PM ET", "Paycor Stadium — Cincinnati, OH", "Tampa Bay Buccaneers", "+3.5", "Cincinnati Bengals", 1], ["Sep 13", "1:00 PM ET", "Ford Field — Detroit, MI", "New Orleans Saints", "+7.0", "Detroit Lions", 1], ["Sep 13", "1:00 PM ET", "NRG Stadium — Houston, TX", "Buffalo Bills", "-1.0", "Houston Texans", 1], ["Sep 13", "1:00 PM ET", "Lucas Oil Stadium — Indianapolis, IN", "Baltimore Ravens", "-3.5", "Indianapolis Colts", 1], ["Sep 13", "1:00 PM ET", "EverBank Stadium — Jacksonville, FL", "Cleveland Browns", "+8.5", "Jacksonville Jaguars", 1], ["Sep 13", "1:00 PM ET", "Acrisure Stadium — Pittsburgh, PA", "Atlanta Falcons", "+3.5", "Pittsburgh Steelers", 1], ["Sep 13", "1:00 PM ET", "Nissan Stadium — Nashville, TN", "New York Jets", "+1.5", "Tennessee Titans", 1], ["Sep 13", "4:25 PM ET", "SoFi Stadium — Inglewood, CA", "Arizona Cardinals", "+10.0", "Los Angeles Chargers", 1], ["Sep 13", "4:25 PM ET", "U.S. Bank Stadium — Minneapolis, MN", "Green Bay Packers", "+1.0", "Minnesota Vikings", 1], ["Sep 13", "4:25 PM ET", "Allegiant Stadium — Las Vegas, NV", "Miami Dolphins", "+3.5", "Las Vegas Raiders", 1], ["Sep 13", "4:25 PM ET", "Lincoln Financial Field — Philadelphia, PA", "Washington Commanders", "+5.0", "Philadelphia Eagles", 1], ["Sep 13", "8:20 PM ET", "MetLife Stadium — East Rutherford, NJ", "Dallas Cowboys", "-3.0", "New York Giants", 2], ["Sep 14", "8:15 PM ET", "GEHA Field at Arrowhead Stadium — Kansas City, MO", "Denver Broncos", "+2.5", "Kansas City Chiefs", 2]];
+const PLAYERS=["Scott","Ross","Ken","Jim"];
+let currentPlayer=localStorage.getItem("poolPlayer")||"Scott";
+let picks=JSON.parse(localStorage.getItem("poolPicks")||"{}");
+
+function showTab(id,btn){document.querySelectorAll(".tabpage").forEach(x=>x.classList.add("hidden"));document.getElementById(id).classList.remove("hidden");document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));btn.classList.add("active");if(id==="picks")renderPicks();}
+function atsWinner(g){const m=g.scoreFav+g.spread-g.scoreDog;return m>0?g.fav:(m<0?g.dog:"PUSH");}
+function renderHistory(){document.getElementById("historyBody").innerHTML=HIST.map(g=>{const aw=atsWinner(g);const cell=p=>{const r=aw==="PUSH"?"PUSH":g.picks[p]===aw?"W":"L";return `<span class="${r==="W"?"resultwin":"resultloss"}">${g.picks[p]} · ${r}</span>`};return `<tr><td><b>${g.fav} ${g.spread}</b> vs ${g.dog}</td><td>${g.date}<br>${g.time}</td><td>${g.venue}</td><td>${g.scoreFav}–${g.scoreDog}</td><td><b>${aw}</b></td><td>${cell("Ross")}</td><td>${cell("Scott")}</td><td>${cell("Jim")}</td><td>${cell("Ken")}</td></tr>`}).join("");}
+function renderPlayers(){document.getElementById("players").innerHTML=PLAYERS.map(p=>`<button class="player ${p===currentPlayer?"active":""}" onclick="setPlayer('${p}')">${p}</button>`).join("");}
+function setPlayer(p){currentPlayer=p;localStorage.setItem("poolPlayer",p);renderPicks();}
+function getPick(k){return (picks[currentPlayer]||{})[k]||"";}
+function setPick(k,t){if(!picks[currentPlayer])picks[currentPlayer]={};picks[currentPlayer][k]=t;localStorage.setItem("poolPicks",JSON.stringify(picks));renderPicks();}
+function teamButton(k,t){return `<button class="pickbtn ${getPick(k)===t?"selected":""}" onclick="setPick('${k}',${JSON.stringify(t)})"><span class="check">✓ </span>${t}</button>`;}
+function renderCollege(){let s="";for(let i=1;i<=6;i++){s+=`<div class="game"><div class="gamehead"><div class="match">College Game ${i}</div><span class="badge">1 point</span></div><div class="pickrow">${teamButton("C"+i,"Team A")}${teamButton("C"+i,"Team B")}</div></div>`}document.getElementById("collegeSlots").innerHTML=s;}
+function renderNFL(){document.getElementById("nflBoard").innerHTML=NFL.map((g,i)=>{const [date,time,venue,away,spread,home,pts]=g;return `<div class="game"><div class="gamehead"><div><div class="match">${away} @ ${home}</div><div class="meta">${date} • ${time} • ${venue}</div></div><span class="badge">${pts} point${pts>1?"s":""}</span></div><div class="meta">Spread: ${spread.startsWith("-")?away:home} ${spread} • Favorite: ${spread.startsWith("-")?away:home}</div><div class="pickrow">${teamButton("N"+i,away)}${teamButton("N"+i,home)}</div></div>`}).join("");}
+function renderPicks(){renderPlayers();renderCollege();renderNFL();document.getElementById("deadlineText").textContent="Current deadline: Thursday, Sept. 10 at 11:59 PM ET. Picks stay hidden from other players until then.";}
+function savePicks(){localStorage.setItem("poolPicks",JSON.stringify(picks));document.getElementById("saveMsg").textContent="Saved on this device.";setTimeout(()=>document.getElementById("saveMsg").textContent="",1800);}
+renderHistory();renderPicks();
+</script></body></html>
