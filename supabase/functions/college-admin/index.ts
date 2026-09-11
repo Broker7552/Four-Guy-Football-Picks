@@ -30,6 +30,7 @@ export async function handle(req, env=Deno.env.get, fetcher=fetch) {
     const members=await db('pool_members?user_id=eq.'+encodeURIComponent(user.id)+'&select=role');
     if(members[0]?.role!=='admin') return reply({error:'Administrator access required'},403);
     const input=await req.json();
+    if(input.action==='manual_options') return reply({players:await db('pool_members?select=user_id,display_name&order=display_name'),weeks:(await db('pool_weeks?select=*&order=season.desc,week_number.desc')).filter(w=>w.week_number>1 && ['published','open','picks_open'].includes(w.status))});
     if(input.action==='list') return reply({weeks:await db('pool_weeks?select=*&order=season.desc,week_number.desc')});
     const rpc=(action,payload={})=>db('rpc/manage_college_draft',{p_action:action,p_actor:user.id,p_week_id:input.week_id ?? null,p_version:input.version ?? null,p_payload:payload});
     if(input.action==='prepare_next') return reply({week:await rpc('prepare_next')});
@@ -37,6 +38,11 @@ export async function handle(req, env=Deno.env.get, fetcher=fetch) {
     const weeks=await db('pool_weeks?id=eq.'+input.week_id+'&select=*');
     const week=weeks[0];
     if(!week) return reply({error:'Week not found'},404);
+    if(input.action==='manual_get') return reply({games:await db('pool_games?week_id=eq.'+week.id+'&published=eq.true&selected_for_pool=eq.true&select=id,home_team,away_team,favorite_team,spread&order=kickoff_at')});
+    if(input.action==='manual_review' || input.action==='manual_save') {
+      const result=await db('rpc/manage_manual_picks',{p_action:input.action==='manual_review'?'review':'save',p_actor:user.id,p_player:input.player_id,p_week_id:week.id,p_picks:input.picks,p_token:input.token ?? null,p_acknowledge:input.acknowledge===true});
+      return reply(input.action==='manual_review'?{review:result}:result);
+    }
     if(input.action?.startsWith('revision_')) return reply(await revisionAction(input,week,db,user,env,fetcher));
     const drafts=await db('pool_college_drafts?week_id=eq.'+week.id+'&select=*');
     const draft=drafts[0] || {week_id:week.id,version:0,candidates:[],selected_ids:[],refreshed_at:null,published_at:null};
