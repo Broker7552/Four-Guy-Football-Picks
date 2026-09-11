@@ -2,6 +2,9 @@
 (() => {
   const el=id=>document.getElementById(id);
   let state=null, selected=new Set(), busy=false, dirty=false, generation=0;
+  let visibleIds=new Set();
+  const filterIds=['college-conference','college-ranked','college-verified','college-search','college-sort','college-selected-only'];
+  function filters(){return {conference:el('college-conference').value,ranked:el('college-ranked').value,verified:el('college-verified').checked,search:el('college-search').value,sort:el('college-sort').value,selected:el('college-selected-only').checked};}
   const time=value=>value ? new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit',hour12:true}).format(new Date(value))+' ET' : 'TBD';
   const message=text=>{el('college-message').textContent=text;};
   const editable=()=>state && state.week.week_number>2 && state.week.status==='setup' && !state.draft.published_at && Date.now()<Date.parse(state.week.spread_lock_at);
@@ -12,6 +15,9 @@
     for(const id of ['college-refresh','college-save','college-review']) el(id).disabled=busy || !editable();
     el('college-confirm').disabled=busy || !editable();
     el('college-count').textContent=selected.size+' College '+(selected.size===1?'Game':'Games')+(dirty?' — unsaved selections':'');
+    const hidden=[...selected].filter(id=>!visibleIds.has(id)).length;
+    el('college-visible').textContent=visibleIds.size+' of '+(state?.draft.candidates.length || 0)+' games shown'+(hidden?' · '+hidden+' selected games hidden by filters':'')+'. Filters never remove selections.';
+    filterIds.forEach(id=>el(id).disabled=busy);
     el('college-rows').querySelectorAll('input').forEach(input=>{input.disabled=busy || !editable();});
   }
   async function api(body) {
@@ -35,23 +41,31 @@
   function render() {
     const rows=el('college-rows'); rows.replaceChildren();
     el('college-preview').hidden=true;
-    if(!state) { controls(); return; }
+    if(!state) { visibleIds=new Set();el('college-ratings').textContent='';controls(); return; }
     const {week,draft,nfl_count}=state;
     el('college-deadlines').textContent='Spread lock: '+time(week.spread_lock_at)+' · Picks due: '+time(week.picks_due_at);
     el('college-source').textContent='Schedule: CollegeFootballData · Spreads: DraftKings via The Odds API · Last import: '+(draft.refreshed_at?time(draft.refreshed_at):'Not loaded');
     el('college-nfl').textContent=nfl_count+' NFL games currently selected for this week. College selection does not change NFL games.';
-    for(const game of draft.candidates) {
+    const metadata=state.metadata || {};
+    el('college-ratings').textContent=(metadata.ap_available?'AP Top 25: '+metadata.season+' week '+metadata.ap_week:'AP rankings unavailable')+' · '+(metadata.sp_available?'SP+: '+metadata.season+' season ratings; Top 50 means SP+ rank 1–50':'SP+ ratings unavailable')+'. '+(metadata.warnings || []).join(' ');
+    const displayed=CollegeView.view(draft.candidates,metadata,filters(),selected);
+    visibleIds=new Set(displayed.map(row=>row.game.id));
+    for(const row of displayed) {
+      const {game,home,away}=row;
       const tr=document.createElement('tr');
       const selectCell=document.createElement('td');
       const checkbox=document.createElement('input'); checkbox.type='checkbox'; checkbox.checked=selected.has(game.id);
       checkbox.setAttribute('aria-label','Select '+game.away_team+' at '+game.home_team);
-      checkbox.addEventListener('change',()=>{checkbox.checked?selected.add(game.id):selected.delete(game.id);dirty=true;el('college-preview').hidden=true;controls();});
+      checkbox.addEventListener('change',()=>{checkbox.checked?selected.add(game.id):selected.delete(game.id);dirty=true;el('college-preview').hidden=true;if(el('college-selected-only').checked)render();else controls();});
       selectCell.append(checkbox);tr.append(selectCell);
-      const values=[game.away_team+' @ '+game.home_team,time(game.kickoff_at),game.favorite_team && game.spread!==null ? game.favorite_team+' '+game.spread : 'Unavailable',game.issue || 'Ready'];
+      const label=(team,name)=>(team.ap?'#'+team.ap+' ':'')+name+(team.sp?' (SP+ #'+team.sp+')':'');
+      const conference=team=>team.conference || 'Conference unavailable';
+      const tag=row.featured===0?'Ranked vs ranked':row.featured===1?'Major conference + verified spread':'';
+      const values=[label(away,game.away_team)+' @ '+label(home,game.home_team)+(tag?' — '+tag:''),conference(away)+' / '+conference(home),time(game.kickoff_at),game.favorite_team && game.spread!==null ? game.favorite_team+' '+game.spread : 'Unavailable',row.verified?'Verified spread':game.issue || 'Line needs refresh'];
       for(const value of values) {const td=document.createElement('td');td.textContent=value;tr.append(td);}
       rows.append(tr);
     }
-    if(!draft.candidates.length) {const tr=document.createElement('tr'),td=document.createElement('td');td.colSpan=5;td.textContent=editable()?'Choose “Load / refresh games” to retrieve the upcoming weekend’s schedule.':'No editable college draft for this week.';tr.append(td);rows.append(tr);}
+    if(!displayed.length) {const tr=document.createElement('tr'),td=document.createElement('td');td.colSpan=6;td.textContent=draft.candidates.length?'No games match these filters. Clear filters to see the full schedule.':editable()?'Choose “Load / refresh games” to retrieve the upcoming weekend’s schedule.':'No editable college draft for this week.';tr.append(td);rows.append(tr);}
     controls();
   }
   async function loadWeek() {
@@ -98,6 +112,8 @@
     el('college-preview').hidden=false;message('Review the games below, then confirm publication.');
   }));
   el('college-cancel').addEventListener('click',()=>{el('college-preview').hidden=true;});
+  filterIds.forEach(id=>el(id).addEventListener(id==='college-search'?'input':'change',render));
+  el('college-clear').addEventListener('click',()=>{el('college-conference').value='All';el('college-ranked').value='all';el('college-search').value='';el('college-verified').checked=false;el('college-selected-only').checked=false;el('college-sort').value='featured';render();});
   el('college-confirm').addEventListener('click',()=>task(async()=>{
     await api({action:'publish',week_id:state.week.id,version:state.draft.version});
     await listWeeks(state.week.id);message('College games published.');
