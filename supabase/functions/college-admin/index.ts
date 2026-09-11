@@ -1,4 +1,5 @@
 import { fetchCandidates } from './providers.mjs';
+import { revisionAction } from './revision.mjs';
 import { fetchMetadata } from './metadata.mjs';
 
 const cors={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization, x-client-info, apikey, content-type','Access-Control-Allow-Methods':'POST, OPTIONS'};
@@ -36,11 +37,13 @@ export async function handle(req, env=Deno.env.get, fetcher=fetch) {
     const weeks=await db('pool_weeks?id=eq.'+input.week_id+'&select=*');
     const week=weeks[0];
     if(!week) return reply({error:'Week not found'},404);
+    if(input.action?.startsWith('revision_')) return reply(await revisionAction(input,week,db,user,env,fetcher));
     const drafts=await db('pool_college_drafts?week_id=eq.'+week.id+'&select=*');
     const draft=drafts[0] || {week_id:week.id,version:0,candidates:[],selected_ids:[],refreshed_at:null,published_at:null};
     if(input.action==='get') {
       const nfl=await db('pool_games?week_id=eq.'+week.id+'&sport=eq.nfl&selected_for_pool=eq.true&select=id');
-      return reply({week,draft,nfl_count:nfl.length,metadata:await fetchMetadata(week,env,fetcher)});
+      const revisions=await db('pool_college_revisions?week_id=eq.'+week.id+'&published_at=is.null&select=*');
+      return reply({week,draft:revisions[0] || draft,revision:!!revisions[0],nfl_count:nfl.length,metadata:await fetchMetadata(week,env,fetcher)});
     }
     if(week.week_number<=2 || week.status!=='setup' || !week.spread_lock_at || Date.now()>=Date.parse(week.spread_lock_at) || draft.published_at) return reply({error:'This week is read-only or its spread-lock deadline has passed'},409);
     if(input.version!==draft.version) return reply({error:'The draft changed. Reload before continuing.'},409);

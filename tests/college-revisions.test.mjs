@@ -1,0 +1,15 @@
+import assert from 'node:assert/strict';
+import {createRequire} from 'node:module';
+import {mergeRevisionCandidates} from '../supabase/functions/college-admin/revision.mjs';
+const require=createRequire(import.meta.url),time=require('../college-revision-time.js');
+assert.equal(time.fromEastern('2026-09-12T19:30'),'2026-09-12T23:30:00.000Z');
+assert.equal(time.fromEastern('2026-12-12T19:30'),'2026-12-13T00:30:00.000Z');
+assert.throws(()=>time.fromEastern('2026-03-08T02:30'));
+assert.equal(time.toEastern('2026-09-12T23:30:00Z'),'2026-09-12T19:30');
+const existing={id:'db:15',game_id:15,spread:-3},saved={id:'100',spread:-7},incoming={id:'100',spread:-9};
+const before=JSON.stringify([existing,saved]);
+const merged=mergeRevisionCandidates([existing,saved],[incoming,{id:'200'}],['100']);
+assert.deepEqual(merged,[existing,saved,{id:'200'}]);
+assert.equal(JSON.stringify([existing,saved]),before);
+assert.equal(mergeRevisionCandidates([],Array.from({length:100},(_,i)=>({id:String(i)})),[]).length,100);
+console.log('Revision merge, unlimited selections and Eastern kickoff tests passed.');
