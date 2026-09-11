@@ -67,7 +67,7 @@
       const label=(team,name)=>(team.ap?'#'+team.ap+' ':'')+name+(team.sp?' (SP+ #'+team.sp+')':'');
       const conference=team=>team.conference || 'Conference unavailable';
       const tag=row.featured===0?'Ranked vs ranked':row.featured===1?'Major conference + verified spread':'';
-      const values=[label(away,game.away_team)+' @ '+label(home,game.home_team)+(tag?' — '+tag:''),conference(away)+' / '+conference(home),time(game.kickoff_at),game.favorite_team && game.spread!==null ? game.favorite_team+' '+game.spread : 'Unavailable',row.verified?'Verified spread':game.issue || 'Line needs refresh'];
+      const values=[label(away,game.away_team)+' @ '+label(home,game.home_team)+(tag?' — '+tag:''),conference(away)+' / '+conference(home),time(game.kickoff_at),game.favorite_team && game.spread!==null ? game.favorite_team+' '+game.spread : 'Unavailable',game.manual_override?'Administrator correction':game.game_id?'Published line retained':row.verified?'Verified spread':game.issue || 'Line needs refresh'];
       for(const value of values) {const td=document.createElement('td');td.textContent=value;tr.append(td);}
       if(state.revision) {const button=document.createElement('button');button.type='button';button.textContent='Edit game';button.disabled=busy;button.addEventListener('click',()=>openGameEditor(game));tr.lastChild.append(document.createElement('br'),button);}
       rows.append(tr);
@@ -163,7 +163,7 @@
       for(const key of ['home_team','away_team','favorite_team','venue']) next[key]=el('college-edit-'+key).value.trim();
       next.spread=Number(el('college-edit-spread').value);
       next.kickoff_at=el('college-edit-kickoff_at').value===CollegeRevisionTime.toEastern(game.kickoff_at)?game.kickoff_at:CollegeRevisionTime.fromEastern(el('college-edit-kickoff_at').value);
-      if(!next.venue) next.venue=game.venue || null;
+      if(!next.venue && !game.venue) next.venue=game.venue;
       if(!next.home_team || !next.away_team || next.home_team===next.away_team || ![next.home_team,next.away_team].includes(next.favorite_team) || !Number.isFinite(next.spread) || next.spread>=0) throw new Error('Enter different teams, a favorite matching one team, and a negative spread.');
       Object.assign(game,next,{manual_override:true,issue:''});dirty=true;
       editingId=null;el('college-game-editor').hidden=true;render();message('Game changed in the draft only. Save, review, then republish to apply it.');
