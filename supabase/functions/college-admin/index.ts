@@ -31,6 +31,7 @@ export async function handle(req, env=Deno.env.get, fetcher=fetch) {
     if(members[0]?.role!=='admin') return reply({error:'Administrator access required'},403);
     const input=await req.json();
     if(input.action==='manual_options') return reply({players:await db('pool_members?select=user_id,display_name&order=display_name'),weeks:(await db('pool_weeks?select=*&order=season.desc,week_number.desc')).filter(w=>w.week_number>1 && ['published','open','picks_open'].includes(w.status))});
+    if(input.action==='test_options') return reply({participants:['Scott','Ross','Ken','Jim'],weeks:(await db('pool_weeks?select=*&order=season.desc,week_number.desc')).filter(w=>w.week_number>1 && ['published','open','picks_open'].includes(w.status))});
     if(input.action==='list') return reply({weeks:await db('pool_weeks?select=*&order=season.desc,week_number.desc')});
     const rpc=(action,payload={})=>db('rpc/manage_college_draft',{p_action:action,p_actor:user.id,p_week_id:input.week_id ?? null,p_version:input.version ?? null,p_payload:payload});
     if(input.action==='prepare_next') return reply({week:await rpc('prepare_next')});
@@ -42,6 +43,16 @@ export async function handle(req, env=Deno.env.get, fetcher=fetch) {
     if(input.action==='manual_review' || input.action==='manual_save') {
       const result=await db('rpc/manage_manual_picks',{p_action:input.action==='manual_review'?'review':'save',p_actor:user.id,p_player:input.player_id,p_week_id:week.id,p_picks:input.picks,p_token:input.token ?? null,p_acknowledge:input.acknowledge===true});
       return reply(input.action==='manual_review'?{review:result}:result);
+    }
+    if(input.action==='test_get') {
+      const games=await db('pool_games?week_id=eq.'+week.id+'&published=eq.true&selected_for_pool=eq.true&select=id,sport,home_team,away_team,favorite_team,spread,kickoff_at&order=kickoff_at');
+      const state=await db('rpc/manage_test_picks',{p_action:'get',p_actor:user.id,p_week_id:week.id,p_participant:null,p_picks:[]});
+      return reply({week,games,state});
+    }
+    if(['test_save','test_publish','test_hide','test_reset'].includes(input.action)) {
+      const action=input.action.slice('test_'.length);
+      const result=await db('rpc/manage_test_picks',{p_action:action,p_actor:user.id,p_week_id:week.id,p_participant:input.participant ?? null,p_picks:input.picks ?? []});
+      return reply(result);
     }
     if(input.action?.startsWith('revision_')) return reply(await revisionAction(input,week,db,user,env,fetcher));
     const drafts=await db('pool_college_drafts?week_id=eq.'+week.id+'&select=*');
