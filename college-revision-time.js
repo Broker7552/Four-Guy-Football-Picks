@@ -16,3 +16,11 @@
   const api={toEastern,fromEastern};root.CollegeRevisionTime=api;
   if(typeof module!=='undefined') module.exports=api;
 })(typeof globalThis!=='undefined'?globalThis:this);
+
+// Live Week 2 view is loaded separately so the existing pool UI remains unchanged.
+if(typeof document!=='undefined'&&!document.querySelector('script[data-live-week]')){
+  const s=document.createElement('script');
+  s.src='live-week.js?v=week2-live-1';
+  s.dataset.liveWeek='1';
+  document.head.appendChild(s);
+}
