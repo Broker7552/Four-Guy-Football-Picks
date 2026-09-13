@@ -6,7 +6,9 @@ const easternDate = value => new Intl.DateTimeFormat('en-CA', {timeZone:'America
 export function buildCandidates(schedule, teams, odds, week, previous = [], now = Date.now()) {
   if (![schedule, teams, odds].every(Array.isArray)) throw new Error('Unexpected provider response');
   const aliases = new Map();
+  const fbsIds = new Set();
   for (const team of teams) {
+    if (String(team.classification || '').toLowerCase()==='fbs') fbsIds.add(String(team.id));
     const names = [team.school, ...(team.alternateNames || [])].filter(Boolean);
     for (const name of [...names, ...names.map(n => team.mascot ? n+' '+team.mascot : n)]) {
       const key=normalize(name);
@@ -22,6 +24,8 @@ export function buildCandidates(schedule, teams, odds, week, previous = [], now 
     const kickoff=instant(game.startDate);
     if (!kickoff || Date.parse(kickoff)<cutoff || Date.parse(kickoff)>=end || game.completed) continue;
     if (!game.id || !game.homeTeam || !game.awayTeam) throw new Error('Incomplete schedule response');
+    // Administrator choices should include FBS-vs-FBS and FBS-vs-FCS games, but never FCS-vs-FCS.
+    if (!fbsIds.has(String(game.homeId)) && !fbsIds.has(String(game.awayId))) continue;
     const matching=odds.filter(e => identify(e.home_team)===String(game.homeId) && identify(e.away_team)===String(game.awayId)
       && instant(e.commence_time) && easternDate(e.commence_time)===easternDate(kickoff));
     const row={id:String(game.id),home_team:game.homeTeam,away_team:game.awayTeam,venue:game.venue || null,
