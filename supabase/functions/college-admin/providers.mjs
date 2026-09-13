@@ -16,6 +16,10 @@ export function buildCandidates(schedule, teams, odds, week, previous = [], now 
     }
   }
   const identify = name => { const ids=aliases.get(normalize(name)); return ids?.size===1 ? [...ids][0] : null; };
+  const hasFbsTeam = (homeName, awayName) => {
+    const homeId=identify(homeName), awayId=identify(awayName);
+    return (homeId && fbsIds.has(homeId)) || (awayId && fbsIds.has(awayId));
+  };
   const cutoff=Date.parse(week.picks_due_at);
   // Date window is derived from the pool's deadlines, not a provider's week numbering.
   const end=cutoff+4*86400000;
@@ -24,7 +28,7 @@ export function buildCandidates(schedule, teams, odds, week, previous = [], now 
     const kickoff=instant(game.startDate);
     if (!kickoff || Date.parse(kickoff)<cutoff || Date.parse(kickoff)>=end || game.completed) continue;
     if (!game.id || !game.homeTeam || !game.awayTeam) throw new Error('Incomplete schedule response');
-    // Administrator choices should include FBS-vs-FBS and FBS-vs-FCS games, but never FCS-vs-FCS.
+    // Administrator choices should include FBS-vs-FBS and FBS-vs-FCS games, but never FCS-vs-FCS/lower-division-only games.
     if (!fbsIds.has(String(game.homeId)) && !fbsIds.has(String(game.awayId))) continue;
     const matching=odds.filter(e => identify(e.home_team)===String(game.homeId) && identify(e.away_team)===String(game.awayId)
       && instant(e.commence_time) && easternDate(e.commence_time)===easternDate(kickoff));
@@ -52,8 +56,8 @@ export function buildCandidates(schedule, teams, odds, week, previous = [], now 
     if (game.startTimeTBD) row.issue='Kickoff time TBD';
     candidates.push(row);
   }
-  // Preserve disappeared rows so saved selections are never silently lost.
-  for (const row of previous) if (!candidates.some(c=>c.id===row.id)) candidates.push({...row,issue:'No longer in the upcoming schedule'});
+  // Preserve disappeared rows only when the matchup is still FBS-eligible. This prevents old FCS-vs-FCS rows from being carried forward forever.
+  for (const row of previous) if (!candidates.some(c=>c.id===row.id) && hasFbsTeam(row.home_team,row.away_team)) candidates.push({...row,issue:'No longer in the upcoming schedule'});
   if (new Set(candidates.map(c=>c.id)).size!==candidates.length) throw new Error('Duplicate schedule game IDs');
   return candidates.sort((a,b)=>(a.kickoff_at || a.scheduled_date).localeCompare(b.kickoff_at || b.scheduled_date));
 }
