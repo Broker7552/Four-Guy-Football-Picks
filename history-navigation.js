@@ -13,13 +13,13 @@
   async function renderHistory(n){
     const card=document.querySelector('#history>.card');if(!card)return;
     if(n===1){card.innerHTML=week1HTML();return;}
-    card.innerHTML='<h2>Week 2 — Historical Record</h2><p class="muted">Loading final Week 2 record…</p>';
-    try{const d=await week2();const players=['Ross','Jim','Scott','Ken'];card.innerHTML='<h2>Week 2 — Historical Record</h2><p class="muted">Final Week 2 pool games and preserved picks.</p><div class="fg-history-wrap"><table class="fg-hist-table"><thead><tr><th>Game</th><th>Line</th>'+players.map(x=>'<th>'+x+'</th>').join('')+'</tr></thead><tbody>'+d.g.map(x=>'<tr><td><b>'+esc(x.away_team)+' @ '+esc(x.home_team)+'</b></td><td>'+esc(x.favorite_team)+' '+esc(x.spread)+'</td>'+players.map(n=>'<td>'+esc(d.p[x.id]?.[n]||'—')+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>';}catch(e){card.innerHTML='<h2>Week 2 — Historical Record</h2><p>Unable to load Week 2 history.</p>';}
+    card.innerHTML='<h2>Week 2 — Historical Results</h2><p class="muted">Loading final Week 2 results…</p>';
+    try{const d=await week2();const players=['Ross','Jim','Scott','Ken'];card.innerHTML='<h2>Week 2 — Historical Results</h2><p class="muted">Final Week 2 games, lines and picks.</p><div class="fg-history-wrap"><table class="fg-hist-table"><thead><tr><th>Game</th><th>Line</th>'+players.map(x=>'<th>'+x+'</th>').join('')+'</tr></thead><tbody>'+d.g.map(x=>'<tr><td><b>'+esc(x.away_team)+' @ '+esc(x.home_team)+'</b></td><td>'+esc(x.favorite_team)+' '+esc(x.spread)+'</td>'+players.map(n=>'<td>'+esc(d.p[x.id]?.[n]||'—')+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>';}catch(e){card.innerHTML='<h2>Week 2 — Historical Record</h2><p>Unable to load Week 2 history.</p>';}
   }
   function rebuildNav(){
     const nav=document.querySelector('#app nav');if(!nav)return;
-    [...nav.querySelectorAll('button')].forEach(b=>{const t=b.textContent.trim().toLowerCase();if(t.includes('week 1 historical')||t.includes('week 2 live')||t==='dashboard')b.remove();});
-    let current=[...nav.querySelectorAll('button')].find(b=>b.textContent.trim().toLowerCase()==='current picks');if(current){current.textContent='Current Week';current.onclick=()=>show('picks');}
+    [...nav.querySelectorAll('button')].forEach(b=>{const t=b.textContent.trim().toLowerCase();if(t.includes('week 1 historical')||t.includes('week 2 live')||t==='dashboard'||/^week 2\b/.test(t))b.remove();});
+    let current=[...nav.querySelectorAll('button')].find(b=>b.textContent.trim().toLowerCase()==='current picks');if(current){current.textContent='Week 3';current.onclick=()=>show('picks');}
     let hist=[...nav.querySelectorAll('button')].find(b=>b.textContent.toLowerCase().includes('historical'));if(!hist){hist=document.createElement('button');hist.type='button';hist.textContent='Historical';hist.onclick=()=>show('history');const rules=[...nav.querySelectorAll('button')].find(b=>b.textContent.trim()==='Rules');nav.insertBefore(hist,rules||null);}
     let stand=[...nav.querySelectorAll('button')].find(b=>b.textContent.trim()==='Standings');if(!stand){stand=document.createElement('button');stand.type='button';stand.textContent='Standings';stand.onclick=()=>show('standings');nav.insertBefore(stand,hist.nextSibling);}
     hist.onclick=()=>{show('history');renderHistory(Number(document.getElementById('history-week-select')?.value||2));};
