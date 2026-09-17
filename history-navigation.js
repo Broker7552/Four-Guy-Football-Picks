@@ -1,0 +1,37 @@
+(()=>{
+  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const W1=[['Ken','10–6','+$24'],['Ross','9–7','−$4'],['Scott','8–8','−$10'],['Jim','8–8','−$10']];
+  function styles(){if(document.getElementById('fg-history2-style'))return;const s=document.createElement('style');s.id='fg-history2-style';s.textContent='.fg-history-select{font:inherit;padding:10px 12px;border:1px solid #aebbd0;border-radius:8px;background:#fff;color:#10213b;margin-left:6px}.fg-hist-table{min-width:720px}.fg-hist-table td,.fg-hist-table th{vertical-align:top}.fg-current-label{font-weight:800}';document.head.appendChild(s);}
+  async function week2(){
+    const {data:w,error}=await sb.from('pool_weeks').select('*').eq('season',2026).eq('week_number',2).single();if(error)throw error;
+    const {data:g,error:ge}=await sb.from('pool_games').select('*').eq('week_id',w.id).eq('selected_for_pool',true).order('kickoff_at');if(ge)throw ge;
+    const {data:p}=await sb.from('pool_test_picks').select('*').eq('week_id',w.id);
+    const by={};(p||[]).forEach(x=>{(by[x.game_id]??={})[x.participant_name]=x.picked_team});
+    return {w,g,p:by};
+  }
+  function week1HTML(){return '<h2>Week 1 — Historical Record</h2><p class="muted">Week 1 is preserved exactly as played.</p><div class="fg-standings">'+W1.map((x,i)=>'<div class="fg-standing"><small>'+(i+1)+'</small><b>'+x[0]+'</b><div>'+x[1]+' · '+x[2]+'</div></div>').join('')+'</div><p class="muted">Use the Week selector above to move between completed weeks.</p>';}
+  async function renderHistory(n){
+    const card=document.querySelector('#history>.card');if(!card)return;
+    if(n===1){card.innerHTML=week1HTML();return;}
+    card.innerHTML='<h2>Week 2 — Historical Record</h2><p class="muted">Loading final Week 2 record…</p>';
+    try{const d=await week2();const players=['Ross','Jim','Scott','Ken'];card.innerHTML='<h2>Week 2 — Historical Record</h2><p class="muted">Final Week 2 pool games and preserved picks.</p><div class="fg-history-wrap"><table class="fg-hist-table"><thead><tr><th>Game</th><th>Line</th>'+players.map(x=>'<th>'+x+'</th>').join('')+'</tr></thead><tbody>'+d.g.map(x=>'<tr><td><b>'+esc(x.away_team)+' @ '+esc(x.home_team)+'</b></td><td>'+esc(x.favorite_team)+' '+esc(x.spread)+'</td>'+players.map(n=>'<td>'+esc(d.p[x.id]?.[n]||'—')+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>';}catch(e){card.innerHTML='<h2>Week 2 — Historical Record</h2><p>Unable to load Week 2 history.</p>';}
+  }
+  function rebuildNav(){
+    const nav=document.querySelector('#app nav');if(!nav)return;
+    [...nav.querySelectorAll('button')].forEach(b=>{const t=b.textContent.trim().toLowerCase();if(t.includes('week 1 historical')||t.includes('week 2 live')||t==='dashboard')b.remove();});
+    let current=[...nav.querySelectorAll('button')].find(b=>b.textContent.trim().toLowerCase()==='current picks');if(current){current.textContent='Current Week';current.onclick=()=>show('picks');}
+    let hist=[...nav.querySelectorAll('button')].find(b=>b.textContent.toLowerCase().includes('historical'));if(!hist){hist=document.createElement('button');hist.type='button';hist.textContent='Historical';hist.onclick=()=>show('history');const rules=[...nav.querySelectorAll('button')].find(b=>b.textContent.trim()==='Rules');nav.insertBefore(hist,rules||null);}
+    let stand=[...nav.querySelectorAll('button')].find(b=>b.textContent.trim()==='Standings');if(!stand){stand=document.createElement('button');stand.type='button';stand.textContent='Standings';stand.onclick=()=>show('standings');nav.insertBefore(stand,hist.nextSibling);}
+    hist.onclick=()=>{show('history');renderHistory(Number(document.getElementById('history-week-select')?.value||2));};
+  }
+  function selector(){
+    const card=document.querySelector('#history>.card');if(!card)return;
+    let wrap=document.getElementById('history-week-picker');if(!wrap){wrap=document.createElement('div');wrap.id='history-week-picker';wrap.className='notice';wrap.innerHTML='<label><b>Historical week</b> <select id="history-week-select" class="fg-history-select"><option value="2">Week 2</option><option value="1">Week 1</option></select></label>';card.parentNode.insertBefore(wrap,card);}
+    const sel=document.getElementById('history-week-select');sel.onchange=()=>renderHistory(Number(sel.value));
+  }
+  function currentWeek(){
+    const h=document.querySelector('#picks h2');if(h)h.textContent='Week 3 — Current Week';
+  }
+  function start(){styles();rebuildNav();selector();currentWeek();renderHistory(2);const live=document.getElementById('live-week');if(live)live.remove();const lb=document.getElementById('liveWeekBtn');if(lb)lb.remove();}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(start,100));else setTimeout(start,100);
+})();
