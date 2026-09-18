@@ -2,7 +2,7 @@
   const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const WEEK1={Ken:{wins:10,losses:6,pushes:0,points:10,money:24},Ross:{wins:9,losses:7,pushes:0,points:9,money:-4},Scott:{wins:8,losses:8,pushes:0,points:8,money:-10},Jim:{wins:8,losses:8,pushes:0,points:8,money:-10}};
   const ORDER=['Ross','Scott','Jim','Ken'];
-  const WEEK2_MONEY={Ross:24,Jim:-4,Scott:-8,Ken:-12};
+  const WEEK2_MONEY={Ross:24,Scott:-6,Jim:-6,Ken:-12};
   const money=n=>`${n>=0?'+':''}${n}`;
   const pickFor=(data,gameId,name)=>data.picks.find(p=>p.game_id===gameId&&p.participant_name===name)?.picked_team||'—';
   const pickMark=(g,pick)=>{if(!g.completed||!g.ats_winner||g.ats_winner==='Push'||pick==='—')return'';return pick===g.ats_winner?' ✓':' ✕';};
