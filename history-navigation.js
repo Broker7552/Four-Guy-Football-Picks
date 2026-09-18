@@ -5,9 +5,9 @@
   async function week2(){
     const {data:w,error}=await sb.from('pool_weeks').select('*').eq('season',2026).eq('week_number',2).single();if(error)throw error;
     const {data:g,error:ge}=await sb.from('pool_games').select('*').eq('week_id',w.id).eq('selected_for_pool',true).order('kickoff_at');if(ge)throw ge;
-    const {data:p}=await sb.from('pool_test_picks').select('*').eq('week_id',w.id);
+    const {data:p,error:pe}=await sb.from('pool_test_picks').select('*').eq('week_id',w.id);if(pe)throw pe;
     const by={};(p||[]).forEach(x=>{(by[x.game_id]??={})[x.participant_name]=x.picked_team});
-    return {w,g,p:by};
+    if(!(p||[]).length)throw new Error('Week 2 picks unavailable');return {w,g,p:by};
   }
   function week1HTML(){return '<h2>Week 1 — Historical Record</h2><p class="muted">Week 1 is preserved exactly as played.</p><div class="fg-standings">'+W1.map((x,i)=>'<div class="fg-standing"><small>'+(i+1)+'</small><b>'+x[0]+'</b><div>'+x[1]+' · '+x[2]+'</div></div>').join('')+'</div><p class="muted">Use the Week selector above to move between completed weeks.</p>';}
   async function renderHistory(n){
