@@ -30,6 +30,7 @@
     ['Sep 6','7:30 PM ET','Lambeau Field — Green Bay, WI','Notre Dame',-20.5,'Wisconsin',41,13,{Ross:'Notre Dame',Scott:'Notre Dame',Jim:'Notre Dame',Ken:'Wisconsin'}],
     ['Sep 7','7:30 PM ET','Doak Campbell Stadium — Tallahassee, FL','SMU',-2.5,'Florida State',27,24,{Ross:'Florida State',Scott:'Florida State',Jim:'Florida State',Ken:'SMU'}]
   ];
+  globalThis.FG_WEEK1_HIST=HIST;
   const standings=[['1st','Ken','10–6','+$24'],['2nd','Ross','9–7','−$4'],['T-3rd','Scott','8–8','−$10'],['T-3rd','Jim','8–8','−$10']];
   const escape=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   function logo(team,sport){const id=sport==='nfl'?nflLogoIds[team]:collegeLogoIds[team];return id?`https://a.espncdn.com/i/teamlogos/${sport==='nfl'?'nfl':'ncaa'}/500/${id}.png`:'';}
