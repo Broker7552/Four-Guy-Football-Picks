@@ -1,6 +1,6 @@
 (()=>{
   const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const W1=[['Ross','9–7','−$4'],['Scott','8–8','−$10'],['Jim','8–8','−$10'],['Ken','10–6','+$24']];
+  const W1=[['Ross','9–7','9 pts','−$4'],['Scott','8–8','8 pts','−$10'],['Jim','8–8','8 pts','−$10'],['Ken','10–6','10 pts','+$24']];
   function styles(){if(document.getElementById('fg-history2-style'))return;const s=document.createElement('style');s.id='fg-history2-style';s.textContent='.fg-hist-cards{display:grid;gap:12px}.fg-hist-game{border:1px solid #dce3ee;border-radius:12px;padding:14px;background:#fff}.fg-hist-match{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}.fg-hist-match span{color:#667085;text-align:right;white-space:nowrap}.fg-hist-picks{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:12px}.fg-hist-picks div{background:#f7f9fc;border-radius:8px;padding:8px;font-size:14px}.fg-hist-picks span{font-size:13px}.fg-pick-win{background:#ecfdf3!important;color:#16803c}.fg-pick-loss{background:#fff1f2!important;color:#b42318}@media(max-width:650px){.fg-hist-picks{grid-template-columns:repeat(2,1fr)}.fg-hist-match{display:block}.fg-hist-match span{display:block;text-align:left;margin-top:5px}}.fg-history-select{font:inherit;padding:10px 12px;border:1px solid #aebbd0;border-radius:8px;background:#fff;color:#10213b;margin-left:6px}.fg-hist-table{min-width:720px}.fg-hist-table td,.fg-hist-table th{vertical-align:top}.fg-current-label{font-weight:800}';document.head.appendChild(s);}
   async function week2(){
     const {data:w,error}=await sb.from('pool_weeks').select('*').eq('season',2026).eq('week_number',2).single();if(error)throw error;
@@ -14,7 +14,7 @@
     const H=(globalThis.FG_WEEK1_HIST||[]);
     const winner=g=>g[6]+g[4]>g[7]?g[3]:g[6]+g[4]<g[7]?g[5]:'Push';
     const games=H.map(g=>'<div class="fg-hist-game"><div class="fg-hist-match"><b>'+esc(g[3])+' vs '+esc(g[5])+'</b><span>'+esc(g[3])+' '+esc(g[4])+'</span></div><div class="muted">Final: '+esc(g[3])+' '+g[6]+'–'+g[7]+' '+esc(g[5])+' · ATS: '+esc(winner(g))+'</div><div class="fg-hist-picks">'+['Ross','Scott','Jim','Ken'].map(n=>{const v=g[8][n],ok=winner(g)==='Push'||v===winner(g);return '<div class="'+(ok?'fg-pick-win':'fg-pick-loss')+'"><b>'+n+'</b><br><span>'+esc(v)+' '+(winner(g)==='Push'?'':ok?'✓':'✕')+'</span></div>';}).join('')+'</div></div>').join('');
-    return '<h2>Week 1 — Historical Record</h2><p class="muted">Final Week 1 standings, money and picks.</p><div class="fg-standings">'+W1.map((x,i)=>'<div class="fg-standing"><small>'+(i+1)+'</small><b>'+x[0]+'</b><div>'+x[1]+' · <span class="'+(x[2].startsWith('+')?'fg-positive':'fg-negative')+'">'+x[2]+'</span></div></div>').join('')+'</div><h3 style="margin-top:28px">Week 1 Games</h3><div class="fg-hist-cards">'+games+'</div>';
+    return '<h2>Week 1 — Historical Record</h2><p class="muted">Final Week 1 standings, money and picks.</p><div class="fg-standings">'+W1.map((x,i)=>'<div class="fg-standing"><small>'+(i+1)+'</small><b>'+x[0]+'</b><div>'+x[1]+' · '+x[2]+' · <span class="'+(x[3].startsWith('+')?'fg-positive':'fg-negative')+'">'+x[3]+'</span></div></div>').join('')+'</div><h3 style="margin-top:28px">Week 1 Games</h3><div class="fg-hist-cards">'+games+'</div>';
   }
   async function renderHistory(n){
     const card=document.querySelector('#history>.card');if(!card)return;
@@ -22,9 +22,9 @@
     card.innerHTML='<h2>Week 2 — Historical Record</h2><p class="muted">Loading final Week 2 results…</p>';
     try{
       const d=await week2(),players=['Ross','Scott','Jim','Ken'];
-      const finalStats={Ross:['15–7','+$24'],Scott:['8–14','−$6'],Jim:['10–12','−$6'],Ken:['8–14','−$12']};
+      const finalStats={Ross:['15–7','16 pts','+$24'],Scott:['8–14','10 pts','−$6'],Jim:['10–12','10 pts','−$6'],Ken:['8–14','9 pts','−$12']};
       const games=d.g.map(x=>'<div class="fg-hist-game"><div class="fg-hist-match"><b>'+esc(x.away_team)+' @ '+esc(x.home_team)+'</b><span>'+esc(x.favorite_team)+' '+esc(x.spread)+'</span></div><div class="fg-hist-picks">'+players.map(n=>'<div><b>'+n+'</b><br><span>'+esc(d.p[x.id]?.[n]||'—')+'</span></div>').join('')+'</div></div>').join('');
-      card.innerHTML='<h2>Week 2 — Historical Record</h2><p class="muted">Final Week 2 standings, money and picks.</p><div class="fg-standings">'+players.map((n,i)=>'<div class="fg-standing"><small>'+(i+1)+'</small><b>'+n+'</b><div>'+finalStats[n][0]+' · <span class="'+(finalStats[n][1].startsWith('+')?'fg-positive':'fg-negative')+'">'+finalStats[n][1]+'</span></div></div>').join('')+'</div><h3 style="margin-top:28px">Week 2 Games</h3><div class="fg-hist-cards">'+games+'</div>';
+      card.innerHTML='<h2>Week 2 — Historical Record</h2><p class="muted">Final Week 2 standings, money and picks.</p><div class="fg-standings">'+players.map((n,i)=>'<div class="fg-standing"><small>'+(i+1)+'</small><b>'+n+'</b><div>'+finalStats[n][0]+' · '+finalStats[n][1]+' · <span class="'+(finalStats[n][2].startsWith('+')?'fg-positive':'fg-negative')+'">'+finalStats[n][2]+'</span></div></div>').join('')+'</div><h3 style="margin-top:28px">Week 2 Games</h3><div class="fg-hist-cards">'+games+'</div>';
     }catch(e){card.innerHTML='<h2>Week 2 — Historical Record</h2><p>Unable to load Week 2 history.</p>';}
   }
   function rebuildNav(){
