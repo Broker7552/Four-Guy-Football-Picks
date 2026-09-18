@@ -19,7 +19,7 @@
 
 if(typeof document!=='undefined'&&!document.querySelector('script[data-live-week]')){
   const s=document.createElement('script');
-  s.src='live-week.js?v=standings-money-3';
+  s.src='live-week.js?v=standings-money-4';
   s.dataset.liveWeek='1';
   document.head.appendChild(s);
 }
