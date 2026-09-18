@@ -5,9 +5,10 @@
   async function week2(){
     const {data:w,error}=await sb.from('pool_weeks').select('*').eq('season',2026).eq('week_number',2).single();if(error)throw error;
     const {data:g,error:ge}=await sb.from('pool_games').select('*').eq('week_id',w.id).eq('selected_for_pool',true).order('kickoff_at');if(ge)throw ge;
-    const {data:p,error:pe}=await sb.from('pool_test_picks').select('*').eq('week_id',w.id);if(pe)throw pe;
-    const by={};(p||[]).forEach(x=>{(by[x.game_id]??={})[x.participant_name]=x.picked_team});
-    if(!(p||[]).length)throw new Error('Week 2 picks unavailable');return {w,g,p:by};
+    const {data:live,error:le}=await sb.functions.invoke('pool-live',{body:{week_number:2}});if(le)throw le;
+    const by={};const lp=live?.picks||live?.pick_rows||live?.data?.picks||[];
+    lp.forEach(x=>{const gid=x.game_id??x.gameId;const n=x.participant_name??x.participant??x.name;const pick=x.picked_team??x.pick;if(gid&&n)(by[gid]??={})[n]=pick;});
+    return {w,g,p:by,live};
   }
   function week1HTML(){
     const H=(globalThis.FG_WEEK1_HIST||[]);
