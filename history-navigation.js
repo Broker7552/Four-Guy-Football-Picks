@@ -22,9 +22,9 @@
     card.innerHTML='<h2>Week 2 — Historical Record</h2><p class="muted">Loading final Week 2 results…</p>';
     try{
       const d=await week2(),players=['Ross','Scott','Jim','Ken'];
-      const finalStats={Ross:['15–7','16 pts'],Jim:['10–12','10 pts'],Scott:['8–14','10 pts'],Ken:['8–14','9 pts']};
+      const finalStats={Ross:['15–7','+$24'],Scott:['8–14','−$6'],Jim:['10–12','−$6'],Ken:['8–14','−$12']};
       const games=d.g.map(x=>'<div class="fg-hist-game"><div class="fg-hist-match"><b>'+esc(x.away_team)+' @ '+esc(x.home_team)+'</b><span>'+esc(x.favorite_team)+' '+esc(x.spread)+'</span></div><div class="fg-hist-picks">'+players.map(n=>'<div><b>'+n+'</b><br><span>'+esc(d.p[x.id]?.[n]||'—')+'</span></div>').join('')+'</div></div>').join('');
-      card.innerHTML='<h2>Week 2 — Historical Record</h2><p class="muted">Final Week 2 standings and picks.</p><div class="fg-standings">'+players.map((n,i)=>'<div class="fg-standing"><small>'+(i+1)+'</small><b>'+n+'</b><div>'+finalStats[n][0]+' · '+finalStats[n][1]+'</div></div>').join('')+'</div><h3 style="margin-top:28px">Week 2 Games</h3><div class="fg-hist-cards">'+games+'</div>';
+      card.innerHTML='<h2>Week 2 — Historical Record</h2><p class="muted">Final Week 2 standings, money and picks.</p><div class="fg-standings">'+players.map((n,i)=>'<div class="fg-standing"><small>'+(i+1)+'</small><b>'+n+'</b><div>'+finalStats[n][0]+' · <span class="'+(finalStats[n][1].startsWith('+')?'fg-positive':'fg-negative')+'">'+finalStats[n][1]+'</span></div></div>').join('')+'</div><h3 style="margin-top:28px">Week 2 Games</h3><div class="fg-hist-cards">'+games+'</div>';
     }catch(e){card.innerHTML='<h2>Week 2 — Historical Record</h2><p>Unable to load Week 2 history.</p>';}
   }
   function rebuildNav(){
