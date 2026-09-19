@@ -43,6 +43,6 @@
   function currentWeek(){
     const h=document.querySelector('#picks h2');if(h)h.textContent='Week 3 — Current Week';
   }
-  function start(){styles();rebuildNav();selector();currentWeek();renderHistory(2);const live=document.getElementById('live-week');if(live)live.remove();const lb=document.getElementById('liveWeekBtn');if(lb)lb.remove();}
+  function start(){styles();rebuildNav();selector();currentWeek();renderHistory(2);}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(start,100));else setTimeout(start,100);
 })();
