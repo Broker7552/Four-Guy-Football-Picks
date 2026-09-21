@@ -32,7 +32,7 @@
     let glance=[...nav.querySelectorAll('button')].find(b=>b.textContent.trim()==='Week at a Glance');
     if(!glance){glance=document.createElement('button');glance.type='button';glance.textContent='Week at a Glance';glance.onclick=()=>show('home');nav.insertBefore(glance,nav.firstChild);}
     [...nav.querySelectorAll('button')].forEach(b=>{const t=b.textContent.trim().toLowerCase();if(t.includes('week 1 historical')||t.includes('week 2 live')||t==='dashboard'||/^week 2\b/.test(t))b.remove();});
-    let current=[...nav.querySelectorAll('button')].find(b=>b.textContent.trim().toLowerCase()==='current picks');if(current){current.textContent='Week 3';current.onclick=()=>show('picks');}
+    if(glance)nav.insertBefore(glance,nav.firstChild);\n    let current=[...nav.querySelectorAll('button')].find(b=>b.textContent.trim().toLowerCase()==='current picks');if(current){current.textContent='Week 3';current.onclick=()=>show('picks');}
     let hist=[...nav.querySelectorAll('button')].find(b=>b.textContent.toLowerCase().includes('historical'));if(!hist){hist=document.createElement('button');hist.type='button';hist.textContent='Historical';hist.onclick=()=>show('history');const rules=[...nav.querySelectorAll('button')].find(b=>b.textContent.trim()==='Rules');nav.insertBefore(hist,rules||null);}
     let stand=[...nav.querySelectorAll('button')].find(b=>b.textContent.trim()==='Standings');if(!stand){stand=document.createElement('button');stand.type='button';stand.textContent='Standings';stand.onclick=()=>show('standings');nav.insertBefore(stand,hist.nextSibling);}
     hist.onclick=()=>{show('history');renderHistory(Number(document.getElementById('history-week-select')?.value||2));};
