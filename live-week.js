@@ -18,30 +18,11 @@
   }
   const gameWeight=g=>{const t=String(g.status_detail||'').toLowerCase();return g.sport==='nfl'&&(t.includes('sunday night')||t.includes('monday night'))?2:1;};
   function projection(data){
-    const nfl=data.games.filter(g=>g.sport==='nfl'), remaining=data.games.filter(g=>!g.completed);
+    const nfl=data.games.filter(g=>g.sport==='nfl'),remaining=data.games.filter(g=>!g.completed);
     const nflCompleted=nfl.filter(g=>g.completed).length;
     if(!nfl.length||!nflCompleted||!remaining.length)return '';
     const nowPts=Object.fromEntries(ORDER.map(n=>[n,Number(data.standings.find(s=>s.name===n)?.points||0)]));
-    const places=Object.fromEntries(ORDER.map(n=>[n,[0,0,0,0]]));
-    const N=10000;
-    for(let i=0;i<N;i++){
-      const pts={...nowPts};
-      remaining.forEach(g=>{
-        const winner=Math.random()<.5?g.away_team:g.home_team,w=gameWeight(g);
-        ORDER.forEach(n=>{if(pickFor(data,g.id,n)===winner)pts[n]+=w;});
-      });
-      const ranked=ORDER.slice().sort((a,b)=>pts[b]-pts[a]);
-      let pos=0;
-      while(pos<ranked.length){
-        let end=pos+1;while(end<ranked.length&&pts[ranked[end]]===pts[ranked[pos]])end++;
-        const share=1/(end-pos);
-        for(let j=pos;j<end;j++)for(let p=pos;p<end;p++)places[ranked[j]][p]+=share;
-        pos=end;
-      }
-    }
-    const pct=(n,p)=>Math.round(places[n][p]/N*100);
-    const rows=ORDER.slice().sort((a,b)=>pct(b,0)-pct(a,0));
-    const scenarioGames=remaining.filter(g=>ORDER.some(n=>pickFor(data,g.id,n)!=='—')).slice(0,4);
+    const scenarioGames=remaining.filter(g=>ORDER.some(n=>pickFor(data,g.id,n)!=='—')).slice(0,6);
     const scenarios=scenarioGames.map(g=>{
       const sides=[g.away_team,g.home_team].map(team=>{
         const helped=ORDER.filter(n=>pickFor(data,g.id,n)===team),w=gameWeight(g);
@@ -50,7 +31,7 @@
       }).join('');
       return '<div class="scenario-game"><b>'+esc(g.away_team)+' @ '+esc(g.home_team)+'</b>'+sides+'</div>';
     }).join('');
-    return '<div class="projection-box"><h3>Projected Finish</h3><p class="muted">10,000 remaining-game simulations · tied places are split across positions</p><div class="projection-table"><div class="projection-head"><span>Player</span><span>1st</span><span>2nd</span><span>3rd</span><span>4th</span></div>'+rows.map(n=>'<div><b>'+esc(n)+'</b><span>'+pct(n,0)+'%</span><span>'+pct(n,1)+'%</span><span>'+pct(n,2)+'%</span><span>'+pct(n,3)+'%</span></div>').join('')+'</div>'+(scenarios?'<h3 class="scenario-title">Remaining Game Scenarios</h3><p class="muted">Who gains pool points depending on which side covers.</p><div class="scenario-list">'+scenarios+'</div>':'')+'</div>';
+    return scenarios?'<div class="projection-box"><h3>Remaining Game Scenarios</h3><p class="muted">How each remaining result changes the weekly point totals.</p><div class="scenario-list">'+scenarios+'</div></div>':'';
   }
   function render(data){
     document.getElementById('live-week-status').textContent='Published Week 3 picks · scores refresh automatically about every minute.';
