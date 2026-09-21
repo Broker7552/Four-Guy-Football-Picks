@@ -26,7 +26,7 @@
     const scenarios=scenarioGames.map(g=>{
       const sides=[g.away_team,g.home_team].map(team=>{
         const helped=ORDER.filter(n=>pickFor(data,g.id,n)===team),w=gameWeight(g);
-        const scenarioPts=Object.fromEntries(ORDER.map(n=>[n,nowPts[n]+(helped.includes(n)?w:0)]));const ranked=ORDER.slice().sort((a,b)=>scenarioPts[b]-scenarioPts[a]);const place={};let p=0;while(p<ranked.length){let e=p+1;while(e<ranked.length&&scenarioPts[ranked[e]]===scenarioPts[ranked[p]])e++;const label=(p+1)+(p===0?'st':p===1?'nd':p===2?'rd':'th');for(let j=p;j<e;j++)place[ranked[j]]=label;p=e;}const totals=ORDER.map(n=>'<span><b>'+esc(n)+'</b> '+scenarioPts[n]+' pts <em data-place="'+place[n]+'">'+place[n]+' <small>(was '+currentPlace[n]+')</small></em></span>').join('');
+        const scenarioPts=Object.fromEntries(ORDER.map(n=>[n,nowPts[n]+(helped.includes(n)?w:0)]));const ranked=ORDER.slice().sort((a,b)=>scenarioPts[b]-scenarioPts[a]);const place={};let p=0;while(p<ranked.length){let e=p+1;while(e<ranked.length&&scenarioPts[ranked[e]]===scenarioPts[ranked[p]])e++;const label=(p+1)+(p===0?'st':p===1?'nd':p===2?'rd':'th');for(let j=p;j<e;j++)place[ranked[j]]=label;p=e;}const totals=ORDER.map(n=>'<span><b>'+esc(n)+'</b> '+scenarioPts[n]+' pts <em data-place="'+place[n]+'">'+place[n]+' <small>('+currentPlace[n]+')</small></em></span>').join('');
         return '<div class="scenario-side"><div><b>'+esc(team)+' covers:</b> '+(helped.length?esc(helped.join(', ')):'No one')+' gains '+w+' pt'+(w===1?'':'s')+'</div><div class="scenario-totals">'+totals+'</div></div>';
       }).join('');
       return '<div class="scenario-game"><b>'+esc(g.away_team)+' @ '+esc(g.home_team)+'</b>'+sides+'</div>';
