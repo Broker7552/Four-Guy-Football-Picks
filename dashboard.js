@@ -1,10 +1,10 @@
 (()=>{
   const ORDER=['Ross','Scott','Jim','Ken'];
   const FINAL_THRU_WEEK2={
-    Ross:{points:25,money:20},
+    Ross:{points:25,money:22},
     Scott:{points:18,money:-16},
     Jim:{points:18,money:-16},
-    Ken:{points:19,money:12}
+    Ken:{points:19,money:10}
   };
   const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   function ensure(){
@@ -40,7 +40,7 @@
         (d.standings||[]).forEach(s=>{if(season[s.name]!==undefined)season[s.name]+=Number(s.points||0)});
         const games=d.games||[]; if(!games.length||games.some(g=>!g.completed))return;
         const rows=ORDER.map(name=>({name,points:Number((d.standings||[]).find(s=>s.name===name)?.points||0)})).sort((a,b)=>b.points-a.points);
-        const prizes=[24,-4,-8,-12]; let i=0;
+        const prizes=[24,-2,-8,-14]; let i=0;
         while(i<rows.length){let j=i+1;while(j<rows.length&&rows[j].points===rows[i].points)j++;const share=prizes.slice(i,j).reduce((a,b)=>a+b,0)/(j-i);for(let k=i;k<j;k++)dollars[rows[k].name]+=share;i=j}
       });
       const completed=(cur.games||[]).filter(g=>g.completed).length,total=(cur.games||[]).length;
