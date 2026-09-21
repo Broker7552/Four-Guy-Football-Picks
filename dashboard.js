@@ -42,7 +42,7 @@
         const money=dollars[name];
         const cls=money>0?'money-pos':money<0?'money-neg':'money-zero';
         const amount=(money>0?'+':money<0?'−':'')+'$'+Math.abs(money).toFixed(2);
-        return '<div class="dash-player"><b>'+esc(name)+'</b><div class="dash-score">'+Number(s.points||0)+' pts</div><div class="dash-detail">Week '+current+': '+rec+'</div><div class="dash-season">Season: <span style="color:#16833b">'+season[name]+' pts</span><br>Money through Week '+moneyThrough+': <span class="money-amount '+cls+'">'+amount+'</span></div></div>';
+        return '<div class="dash-player"><b>'+esc(name)+'</b><div class="dash-score">'+Number(s.points||0)+' pts</div><div class="dash-detail">Week '+current+': '+rec+'</div><div class="dash-season">Season through Week '+current+': <span style="color:#16833b">'+season[name]+' pts</span><br>Money through Week '+moneyThrough+': <span class="money-amount '+cls+'">'+amount+'</span></div></div>';
       }).join('')+'</div>';
       status.textContent='Current weekly standings, season points and cumulative dollars';
     }catch(e){status.textContent='Dashboard unavailable: '+(e?.message||'unknown error')}
