@@ -27,15 +27,7 @@
       });
       const completed=(cur.games||[]).filter(g=>g.completed).length,total=(cur.games||[]).length;
       document.getElementById('dash-progress').textContent='Week '+current+' · '+completed+' of '+total+' games complete';
-      document.getElementById('dash-grid').innerHTML='<div class="dash-grid">'+ORDER.map(name=>{const s=(cur.standings||[]).find(x=>x.name===name)||{wins:0,losses:0,pushes:0,points:0};const rec=s.wins+'-'+s.losses+(s.pushes?'-'+s.pushes+' P':'');return '<div class="dash-player"><b>'+esc(name)+'</b><div class="dash-score">'+Number(s.points||0)+' pts</div><div class="dash-detail">Week '+current+': '+rec+'</div><div class="dash-season">Season: '+season[name]+' pts<br>Season $: '+(dollars[name]>=0?'+':'−')+''}).join('')+'</div>';
-      status.textContent='Current weekly standings, season points and cumulative dollars';
-    }catch(e){status.textContent='Dashboard unavailable: '+(e?.message||'unknown error');}
-  }
-  window.loadDashboard=loadDashboard;
-  const oldShow=window.show;window.show=function(x){oldShow(x);if(x==='home')loadDashboard();};
-  const start=()=>{ensure();setTimeout(loadDashboard,800);setInterval(()=>{if(document.getElementById('home')?.classList.contains('show')&&!document.getElementById('app')?.classList.contains('hidden'))loadDashboard()},60000)};
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
-})();+Math.abs(dollars[name]).toFixed(2)+'</div></div>'}).join('')+'</div>';
+      document.getElementById('dash-grid').innerHTML='<div class="dash-grid">'+ORDER.map(name=>{const s=(cur.standings||[]).find(x=>x.name===name)||{wins:0,losses:0,pushes:0,points:0};const rec=s.wins+'-'+s.losses+(s.pushes?'-'+s.pushes+' P':'');return '<div class="dash-player"><b>'+esc(name)+'</b><div class="dash-score">'+Number(s.points||0)+' pts</div><div class="dash-detail">Week '+current+': '+rec+'</div><div class="dash-season">Season: '+season[name]+' pts<br>Season $: '+(dollars[name]>=0?'+':'−')+'$'+Math.abs(dollars[name]).toFixed(2)+'</div></div>'}).join('')+'</div>';
       status.textContent='Current weekly standings, season points and cumulative dollars';
     }catch(e){status.textContent='Dashboard unavailable: '+(e?.message||'unknown error');}
   }
