@@ -34,6 +34,7 @@
         while(i<rows.length){let j=i+1;while(j<rows.length&&rows[j].points===rows[i].points)j++;const share=prizes.slice(i,j).reduce((a,b)=>a+b,0)/(j-i);for(let k=i;k<j;k++)dollars[rows[k].name]+=share;i=j}
       });
       const completed=(cur.games||[]).filter(g=>g.completed).length,total=(cur.games||[]).length;
+      const moneyThrough=nums.reduce((last,n,idx)=>{const d=results[idx];const games=d?.games||[];return games.length&&games.every(g=>g.completed)?Math.max(last,n):last;},0);
       document.getElementById('dash-progress').textContent='Week '+current+' · '+completed+' of '+total+' games complete';
       document.getElementById('dash-grid').innerHTML='<div class="dash-grid">'+ORDER.map(name=>{
         const s=(cur.standings||[]).find(x=>x.name===name)||{wins:0,losses:0,pushes:0,points:0};
@@ -41,7 +42,7 @@
         const money=dollars[name];
         const cls=money>0?'money-pos':money<0?'money-neg':'money-zero';
         const amount=(money>0?'+':money<0?'−':'')+'$'+Math.abs(money).toFixed(2);
-        return '<div class="dash-player"><b>'+esc(name)+'</b><div class="dash-score">'+Number(s.points||0)+' pts</div><div class="dash-detail">Week '+current+': '+rec+'</div><div class="dash-season">Season: '+season[name]+' pts<br>Season $: <span class="money-amount '+cls+'">'+amount+'</span></div></div>';
+        return '<div class="dash-player"><b>'+esc(name)+'</b><div class="dash-score">'+Number(s.points||0)+' pts</div><div class="dash-detail">Week '+current+': '+rec+'</div><div class="dash-season">Points through Week '+current+': '+season[name]+' pts<br>Money through Week '+moneyThrough+': <span class="money-amount '+cls+'">'+amount+'</span></div></div>';
       }).join('')+'</div>';
       status.textContent='Current weekly standings, season points and cumulative dollars';
     }catch(e){status.textContent='Dashboard unavailable: '+(e?.message||'unknown error')}
