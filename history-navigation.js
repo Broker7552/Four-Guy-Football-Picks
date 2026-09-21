@@ -47,6 +47,7 @@
 
     let hist=buttons.find(b=>b.textContent.toLowerCase().includes('historical'));
     if(!hist){hist=document.createElement('button');hist.type='button';hist.textContent='Historical';hist.onclick=()=>show('history');}
+    hist.textContent='Historical';
     hist.onclick=()=>{show('history');renderHistory(Number(document.getElementById('history-week-select')?.value||2));};
 
     const rules=buttons.find(b=>b.textContent.trim()==='Rules');
