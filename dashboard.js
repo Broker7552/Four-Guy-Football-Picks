@@ -4,7 +4,7 @@
     Ross:{points:25,money:20},
     Scott:{points:18,money:-14},
     Jim:{points:18,money:-14},
-    Ken:{points:19,money:8}
+    Ken:{points:19,money:4}
   };
   const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   function ensure(){
