@@ -14,11 +14,33 @@
     const nav=document.querySelector('#app nav'); if(!nav)return;
     if(!btn){btn=document.createElement('button');btn.id='liveWeekBtn';btn.type='button';btn.textContent='Week 3 Live';btn.onclick=()=>{show('live-week');loadLiveWeek();};nav.appendChild(btn);} const week3=[...nav.querySelectorAll('button')].find(b=>b.textContent.trim()==='Week 3'); if(week3&&week3.nextSibling!==btn) nav.insertBefore(btn,week3.nextSibling);
     if(!document.getElementById('live-week')){const section=document.createElement('section');section.id='live-week';section.className='tab';section.innerHTML='<div class="card"><h2>Week 3 Live</h2><p id="live-week-status" class="muted">Loading published picks and scores…</p><div id="live-week-standings"></div><div id="live-week-games"></div></div>';document.getElementById('app').appendChild(section);}
-    if(!document.getElementById('week3-live-style')){const style=document.createElement('style');style.id='week3-live-style';style.textContent='#live-week .scoreline{font-size:1.05rem;font-weight:800;margin:5px 0}#live-week .live-badge{display:inline-block;padding:3px 7px;border-radius:999px;background:#eef4ff;font-size:.8rem;font-weight:800}#live-week .game-live{border-left:5px solid #1769d2}#live-week .game-final{border-left:5px solid #2d7a46}#live-week .game-pre{border-left:5px solid #aebbd0}#live-week .picks-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-top:10px}#live-week .picks-grid div{background:#f7f9fc;border-radius:8px;padding:7px}#live-week .pick-cover{color:#16833b;font-weight:800}#live-week .pick-behind{color:#c62828;font-weight:800}#live-week .pick-push{color:#111;font-weight:800}.live-stand-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:12px 0 20px}.live-stand-grid div{background:#f7f9fc;border:1px solid #e1e7f0;border-radius:10px;padding:10px;text-align:center}';document.head.appendChild(style);}
+    if(!document.getElementById('week3-live-style')){const style=document.createElement('style');style.id='week3-live-style';style.textContent='#live-week .scoreline{font-size:1.05rem;font-weight:800;margin:5px 0}#live-week .live-badge{display:inline-block;padding:3px 7px;border-radius:999px;background:#eef4ff;font-size:.8rem;font-weight:800}#live-week .game-live{border-left:5px solid #1769d2}#live-week .game-final{border-left:5px solid #2d7a46}#live-week .game-pre{border-left:5px solid #aebbd0}#live-week .picks-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-top:10px}#live-week .picks-grid div{background:#f7f9fc;border-radius:8px;padding:7px}#live-week .pick-cover{color:#16833b;font-weight:800}#live-week .pick-behind{color:#c62828;font-weight:800}#live-week .pick-push{color:#111;font-weight:800}.live-stand-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:12px 0 20px}.live-stand-grid div{background:#f7f9fc;border:1px solid #e1e7f0;border-radius:10px;padding:10px;text-align:center}.projection-box{border:1px solid #dce3ee;border-radius:12px;padding:14px;margin:4px 0 22px;background:#fff}.projection-box h3{margin:0 0 4px}.projection-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:10px}.projection-grid div{display:flex;justify-content:space-between;align-items:center;background:#f7f9fc;border-radius:8px;padding:9px 10px}.projection-grid strong{font-size:1.1rem}';document.head.appendChild(style);}
+  }
+  const gameWeight=g=>{const t=String(g.status_detail||'').toLowerCase();return g.sport==='nfl'&&(t.includes('sunday night')||t.includes('monday night'))?2:1;};
+  function projection(data){
+    const nfl=data.games.filter(g=>g.sport==='nfl'), remaining=data.games.filter(g=>!g.completed);
+    const nflCompleted=nfl.filter(g=>g.completed).length;
+    if(!nfl.length||!nflCompleted||!remaining.length)return '';
+    const nowPts=Object.fromEntries(ORDER.map(n=>[n,Number(data.standings.find(s=>s.name===n)?.points||0)]));
+    const wins=Object.fromEntries(ORDER.map(n=>[n,0]));
+    const ties=Object.fromEntries(ORDER.map(n=>[n,0]));
+    const N=10000;
+    for(let i=0;i<N;i++){
+      const pts={...nowPts};
+      remaining.forEach(g=>{
+        const winner=Math.random()<.5?g.away_team:g.home_team, w=gameWeight(g);
+        ORDER.forEach(n=>{if(pickFor(data,g.id,n)===winner)pts[n]+=w;});
+      });
+      const best=Math.max(...ORDER.map(n=>pts[n])), leaders=ORDER.filter(n=>pts[n]===best);
+      leaders.forEach(n=>{wins[n]+=1/leaders.length;if(leaders.length>1)ties[n]++;});
+    }
+    const rows=ORDER.map(n=>({name:n,pct:Math.round(wins[n]/N*100)})).sort((a,b)=>b.pct-a.pct);
+    const mondayOnly=remaining.length===1&&String(remaining[0].status_detail||'').toLowerCase().includes('monday');
+    return '<div class="projection-box"><h3>'+(mondayOnly?'Monday Night Scenarios':'Projected Weekly Winner')+'</h3><p class="muted">10,000 remaining-game simulations · projection, not a guarantee</p><div class="projection-grid">'+rows.map(x=>'<div><b>'+esc(x.name)+'</b><strong>'+x.pct+'%</strong></div>').join('')+'</div></div>';
   }
   function render(data){
     document.getElementById('live-week-status').textContent='Published Week 3 picks · scores refresh automatically about every minute.';
-    document.getElementById('live-week-standings').innerHTML='<h3>Week 3 standings so far</h3>'+cards(data.standings);
+    document.getElementById('live-week-standings').innerHTML='<h3>Week 3 standings so far</h3>'+cards(data.standings)+projection(data);
     document.getElementById('live-week-games').innerHTML=[['college','COLLEGE FOOTBALL'],['nfl','NFL']].map(([sport,label])=>'<h3>'+label+'</h3>'+data.games.filter(g=>g.sport===sport).slice().sort((a,b)=>Number(a.completed)-Number(b.completed)).map(g=>{const cls=g.completed?'game-final':g.status==='in'?'game-live':'game-pre';const score=(g.away_score!==null&&g.home_score!==null)?`${esc(g.away_team)} ${g.away_score} @ ${esc(g.home_team)} ${g.home_score}`:`${esc(g.away_team)} @ ${esc(g.home_team)}`;const ats=g.completed&&g.ats_winner?`ATS: ${esc(g.ats_winner==='Push'?'Push':g.ats_winner+' covered')}`:(g.status==='in'&&g.ats_winner?`Current cover: ${esc(g.ats_winner)}`:'');return `<div class="card ${cls}"><div><span class="live-badge">${esc(g.status_detail||(g.completed?'Final':'Scheduled'))}</span></div><div class="scoreline">${score}</div><div class="muted">Line: ${esc(g.favorite_team)} ${esc(g.spread)}${ats?' · '+ats:''}</div><div class="picks-grid">${ORDER.map(name=>{const p=pickFor(data,g.id,name),m=atsMargin(g,p);return `<div><b>${name}</b>: <span class="${pc(m)}">${esc(p)}${fmt(m)}${pickMark(g,p)}</span></div>`;}).join('')}</div></div>`;}).join('')).join('');
   }
   async function loadLiveWeek(){ensureUI();try{document.getElementById('live-week-status').textContent='Refreshing Week 3…';const {data,error}=await sb.functions.invoke('pool-live',{body:{week_number:3}});if(error)throw error;if(data?.error)throw new Error(data.error);render(data);}catch(e){document.getElementById('live-week-status').textContent='Unable to load Week 3 live view: '+(e?.message||'unknown error');}}
