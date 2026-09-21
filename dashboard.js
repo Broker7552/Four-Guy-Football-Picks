@@ -5,7 +5,7 @@
     const home=document.getElementById('home'); if(!home)return;
     let card=document.getElementById('dashboard-overview');
     if(!card){home.innerHTML='<div class="card" id="dashboard-overview"><h2>Week at a Glance</h2><p id="dash-status" class="muted">Loading current standings…</p><div id="dash-progress"></div><div id="dash-grid"></div></div>';
-      const st=document.createElement('style');st.id='dashboard-style';st.textContent='#dash-progress{font-weight:800;margin:10px 0 14px}.dash-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}.dash-player{background:#f7f9fc;border:1px solid #e1e7f0;border-radius:11px;padding:13px;text-align:center}.dash-player b{font-size:1.08rem}.dash-score{font-size:1.45rem;font-weight:900;margin:5px 0}.dash-detail{font-size:.9rem;color:#667085}.dash-season{margin-top:7px;padding-top:7px;border-top:1px solid #e1e7f0;font-weight:700}@media(max-width:650px){.dash-grid{grid-template-columns:repeat(2,1fr)}}';document.head.appendChild(st);
+      const st=document.createElement('style');st.id='dashboard-style';st.textContent='#dash-progress{font-weight:800;margin:10px 0 14px}.dash-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}.dash-player{background:#f7f9fc;border:1px solid #e1e7f0;border-radius:11px;padding:13px;text-align:center}.dash-player b{font-size:1.08rem}.dash-score{font-size:1.45rem;font-weight:900;margin:5px 0}.dash-detail{font-size:.9rem;color:#667085}.dash-season{margin-top:7px;padding-top:7px;border-top:1px solid #e1e7f0;font-weight:700}.money-pos{color:#16833b}.money-neg{color:#c62828}.money-zero{color:#111}@media(max-width:650px){.dash-grid{grid-template-columns:repeat(2,1fr)}}';document.head.appendChild(st);
     }
   }
   async function loadDashboard(){
