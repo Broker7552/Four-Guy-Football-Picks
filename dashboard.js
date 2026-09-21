@@ -1,5 +1,11 @@
 (()=>{
   const ORDER=['Ross','Scott','Jim','Ken'];
+  const FINAL_THRU_WEEK2={
+    Ross:{points:25,money:20},
+    Scott:{points:18,money:-16},
+    Jim:{points:18,money:-16},
+    Ken:{points:19,money:12}
+  };
   const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   function ensure(){
     const home=document.getElementById('home'); if(!home)return;
@@ -24,9 +30,13 @@
       const results=await Promise.all(nums.map(async n=>{try{const {data,error}=await sb.functions.invoke('pool-live',{body:{week_number:n}});return error||data?.error?null:data}catch{return null}}));
       const cur=results[nums.indexOf(current)]||results.filter(Boolean).at(-1);
       if(!cur)throw new Error('Current standings are not available yet.');
-      const season=Object.fromEntries(ORDER.map(n=>[n,0]));
-      const dollars=Object.fromEntries(ORDER.map(n=>[n,0]));
-      results.filter(Boolean).forEach(d=>{
+      const season=Object.fromEntries(ORDER.map(n=>[n,Number(FINAL_THRU_WEEK2[n]?.points||0)]));
+      const dollars=Object.fromEntries(ORDER.map(n=>[n,Number(FINAL_THRU_WEEK2[n]?.money||0)]));
+      // Weeks 1-2 use the finalized totals shown on Standings.
+      // Add points/payouts from Week 3 onward.
+      results.forEach((d,idx)=>{
+        const n=nums[idx];
+        if(!d || n<3)return;
         (d.standings||[]).forEach(s=>{if(season[s.name]!==undefined)season[s.name]+=Number(s.points||0)});
         const games=d.games||[]; if(!games.length||games.some(g=>!g.completed))return;
         const rows=ORDER.map(name=>({name,points:Number((d.standings||[]).find(s=>s.name===name)?.points||0)})).sort((a,b)=>b.points-a.points);
@@ -34,7 +44,7 @@
         while(i<rows.length){let j=i+1;while(j<rows.length&&rows[j].points===rows[i].points)j++;const share=prizes.slice(i,j).reduce((a,b)=>a+b,0)/(j-i);for(let k=i;k<j;k++)dollars[rows[k].name]+=share;i=j}
       });
       const completed=(cur.games||[]).filter(g=>g.completed).length,total=(cur.games||[]).length;
-      const moneyThrough=nums.reduce((last,n,idx)=>{const d=results[idx];const games=d?.games||[];return games.length&&games.every(g=>g.completed)?Math.max(last,n):last;},0);
+      const moneyThrough=nums.reduce((last,n,idx)=>{if(n<=2)return Math.max(last,n);const d=results[idx];const games=d?.games||[];return games.length&&games.every(g=>g.completed)?Math.max(last,n):last;},0);
       document.getElementById('dash-progress').textContent='Week '+current+' · '+completed+' of '+total+' games complete';
       document.getElementById('dash-grid').innerHTML='<div class="dash-grid">'+ORDER.map(name=>{
         const s=(cur.standings||[]).find(x=>x.name===name)||{wins:0,losses:0,pushes:0,points:0};
