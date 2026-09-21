@@ -17,12 +17,18 @@
       const current=week?.week_number||Math.max(...nums,1);
       const results=await Promise.all(nums.map(async n=>{try{const {data,error}=await sb.functions.invoke('pool-live',{body:{week_number:n}});return error||data?.error?null:data}catch{return null}}));
       const cur=results[nums.indexOf(current)]||results.filter(Boolean).at(-1); if(!cur)throw new Error('Current standings are not available yet.');
-      const season=Object.fromEntries(ORDER.map(n=>[n,0]));
-      results.filter(Boolean).forEach(d=>(d.standings||[]).forEach(s=>{if(season[s.name]!==undefined)season[s.name]+=Number(s.points||0)}));
+      const season=Object.fromEntries(ORDER.map(n=>[n,0])),dollars=Object.fromEntries(ORDER.map(n=>[n,0]));
+      results.filter(Boolean).forEach(d=>{
+        (d.standings||[]).forEach(s=>{if(season[s.name]!==undefined)season[s.name]+=Number(s.points||0)});
+        const games=d.games||[]; if(!games.length||games.some(g=>!g.completed))return;
+        const rows=ORDER.map(name=>({name,points:Number((d.standings||[]).find(s=>s.name===name)?.points||0)})).sort((a,b)=>b.points-a.points);
+        const prizes=[24,-4,-8,-12]; let i=0;
+        while(i<rows.length){let j=i+1;while(j<rows.length&&rows[j].points===rows[i].points)j++;const share=prizes.slice(i,j).reduce((a,b)=>a+b,0)/(j-i);for(let k=i;k<j;k++)dollars[rows[k].name]+=share;i=j;}
+      });
       const completed=(cur.games||[]).filter(g=>g.completed).length,total=(cur.games||[]).length;
       document.getElementById('dash-progress').textContent='Week '+current+' · '+completed+' of '+total+' games complete';
       document.getElementById('dash-grid').innerHTML='<div class="dash-grid">'+ORDER.map(name=>{const s=(cur.standings||[]).find(x=>x.name===name)||{wins:0,losses:0,pushes:0,points:0};const rec=s.wins+'-'+s.losses+(s.pushes?'-'+s.pushes+' P':'');return '<div class="dash-player"><b>'+esc(name)+'</b><div class="dash-score">'+Number(s.points||0)+' pts</div><div class="dash-detail">Week '+current+': '+rec+'</div><div class="dash-season">Season: '+season[name]+' pts</div></div>'}).join('')+'</div>';
-      status.textContent='Current weekly standings and season points';
+      status.textContent='Current weekly standings, season points and cumulative dollars';
     }catch(e){status.textContent='Dashboard unavailable: '+(e?.message||'unknown error');}
   }
   window.loadDashboard=loadDashboard;
