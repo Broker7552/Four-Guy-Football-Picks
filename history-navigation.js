@@ -40,7 +40,7 @@
 
     let live=buttons.find(b=>['week 3 live','weekly live'].includes(b.textContent.trim().toLowerCase()));
     if(!live){live=document.createElement('button');live.type='button';}
-    live.textContent='Weekly Live';live.onclick=()=>show('live');
+    live.textContent='Weekly Live';live.onclick=()=>{show('live-week');if(window.loadLiveWeek)loadLiveWeek();};
 
     let stand=buttons.find(b=>b.textContent.trim().toLowerCase()==='standings');
     if(!stand){stand=document.createElement('button');stand.type='button';stand.textContent='Standings';stand.onclick=()=>show('standings');}
