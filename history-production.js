@@ -7,6 +7,31 @@
   function payout(rows){const out={};const ranked=ORDER.map(name=>({name,points:Number(rows.find(s=>s.name===name)?.points||0)})).sort((a,b)=>b.points-a.points);let i=0;while(i<ranked.length){let j=i+1;while(j<ranked.length&&ranked[j].points===ranked[i].points)j++;const share=PRIZES.slice(i,j).reduce((a,b)=>a+b,0)/(j-i);for(let k=i;k<j;k++)out[ranked[k].name]=share;i=j}return out;}
   const money=n=>(n>0?'+':n<0?'−':'')+'$'+Math.abs(n).toFixed(Number.isInteger(n)?0:2);
   async function completedWeeks(){const {data,error}=await sb.from('pool_weeks').select('id,season,week_number,status').eq('season',2026).eq('status','graded').order('week_number',{ascending:false});if(error)throw error;return data||[];}
+  const W3P={
+31:{Ross:'Georgia Bulldogs',Scott:'Arkansas Razorbacks',Jim:'Georgia Bulldogs',Ken:'Arkansas Razorbacks'},
+32:{Ross:'Texas A&M Aggies',Scott:'Texas A&M Aggies',Jim:'Texas A&M Aggies',Ken:'Kentucky Wildcats'},
+33:{Ross:'Alabama Crimson Tide',Scott:'Florida State Seminoles',Jim:'Alabama Crimson Tide',Ken:'Florida State Seminoles'},
+34:{Ross:'Louisville Cardinals',Scott:'Louisville Cardinals',Jim:'Louisville Cardinals',Ken:'SMU Mustangs'},
+35:{Ross:'Indiana Hoosiers',Scott:'Western Kentucky Hilltoppers',Jim:'Indiana Hoosiers',Ken:'Indiana Hoosiers'},
+36:{Ross:'Missouri Tigers',Scott:'Missouri Tigers',Jim:'Missouri Tigers',Ken:'Troy Trojans'},
+37:{Ross:'LSU Tigers',Scott:'LSU Tigers',Jim:'LSU Tigers',Ken:'Ole Miss Rebels'},
+38:{Ross:'Michigan State Spartans',Scott:'Michigan State Spartans',Jim:'Notre Dame Fighting Irish',Ken:'Michigan State Spartans'},
+39:{Ross:'Tennessee Titans',Scott:'Philadelphia Eagles',Jim:'Philadelphia Eagles',Ken:'Philadelphia Eagles'},
+40:{Ross:'Pittsburgh Steelers',Scott:'Pittsburgh Steelers',Jim:'New England Patriots',Ken:'Pittsburgh Steelers'},
+41:{Ross:'Minnesota Vikings',Scott:'Minnesota Vikings',Jim:'Chicago Bears',Ken:'Minnesota Vikings'},
+42:{Ross:'Carolina Panthers',Scott:'Atlanta Falcons',Jim:'Atlanta Falcons',Ken:'Atlanta Falcons'},
+43:{Ross:'New York Jets',Scott:'Green Bay Packers',Jim:'New York Jets',Ken:'New York Jets'},
+44:{Ross:'New Orleans Saints',Scott:'Baltimore Ravens',Jim:'Baltimore Ravens',Ken:'New Orleans Saints'},
+45:{Ross:'Cincinnati Bengals',Scott:'Houston Texans',Jim:'Houston Texans',Ken:'Cincinnati Bengals'},
+46:{Ross:'Tampa Bay Buccaneers',Scott:'Cleveland Browns',Jim:'Tampa Bay Buccaneers',Ken:'Cleveland Browns'},
+47:{Ross:'Jacksonville Jaguars',Scott:'Denver Broncos',Jim:'Denver Broncos',Ken:'Jacksonville Jaguars'},
+48:{Ross:'Los Angeles Chargers',Scott:'Las Vegas Raiders',Jim:'Los Angeles Chargers',Ken:'Los Angeles Chargers'},
+49:{Ross:'Seattle Seahawks',Scott:'Arizona Cardinals',Jim:'Seattle Seahawks',Ken:'Arizona Cardinals'},
+50:{Ross:'Miami Dolphins',Scott:'San Francisco 49ers',Jim:'San Francisco 49ers',Ken:'Miami Dolphins'},
+51:{Ross:'Dallas Cowboys',Scott:'Dallas Cowboys',Jim:'Dallas Cowboys',Ken:'Washington Commanders'},
+52:{Ross:'Indianapolis Colts',Scott:'Kansas City Chiefs',Jim:'Kansas City Chiefs',Ken:'Indianapolis Colts'},
+53:{Ross:'Los Angeles Rams',Scott:'New York Giants',Jim:'Los Angeles Rams',Ken:'Los Angeles Rams'}
+};
   async function weekData(n){
     const {data:w,error}=await sb.from('pool_weeks').select('*').eq('season',2026).eq('week_number',n).single();if(error)throw error;
     const {data:g,error:ge}=await sb.from('pool_games').select('*').eq('week_id',w.id).eq('selected_for_pool',true).order('kickoff_at');if(ge)throw ge;
@@ -14,6 +39,7 @@
     if(!live&&w.status==='graded'){const {data:s,error:se}=await sb.from('pool_week_result_snapshots').select('participant_name,wins,losses,pushes,points,payout').eq('week_id',w.id);if(se)throw se;if(s?.length)live={standings:s.map(x=>({name:x.participant_name,wins:x.wins,losses:x.losses,pushes:x.pushes,points:x.points,payout:Number(x.payout)})),picks:[],games:[]};}
     if(!live)throw new Error('Finalized results unavailable');
     const by={};for(const x of live?.picks||[]){const gid=x.game_id??x.gameId,nm=x.participant_name??x.participant??x.name,pick=x.picked_team??x.pick;if(gid&&nm)(by[gid]??={})[nm]=pick;}
+    if(n===3&&Object.keys(by).length===0){for(const [gid,picks] of Object.entries(W3P))by[gid]=picks;}
     return {w,g,p:by,live};
   }
   function week1HTML(){
