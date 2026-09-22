@@ -34,7 +34,7 @@
       for(const [value,text] of [['','Leave unchanged'],[game.away_team,game.away_team],[game.home_team,game.home_team]]){const option=document.createElement('option');option.value=value;option.textContent=text;select.append(option);}
       select.addEventListener('change',invalidate);label.append(select);row.append(label);el('manual-games').append(row);
     }
-    message(open()?'Enter only the picks supplied by the selected player. Unchosen games stay unchanged.':'This week’s production picks are locked. Use the Week 3 Test Run panel below for post-deadline testing.');controls();
+    message(open()?'Enter only the picks supplied by the selected player. Unchosen games stay unchanged.':'This week’s production picks are locked. Use the Test Run panel below for post-deadline testing.');controls();
   }
   async function initialize(){
     const current=generation,data=await api({action:'manual_options'});if(current!==generation)return;
@@ -76,7 +76,7 @@
   if(!production)return;
   const panel=document.createElement('div');
   panel.className='card';panel.id='test-picks-panel';
-  panel.innerHTML='<h2>Week 3 Test Run</h2><p class="notice"><b>Test only:</b> enter Scott, Ross, Ken and Jim picks here, then publish the test to preview the revealed-picks screen. These entries do not change production picks or create accounts for the other players.</p><label>Week <select id="test-week"></select></label> <label>Player <select id="test-player"></select></label> <button id="test-reload" type="button">Reload test</button><p id="test-status" class="muted"></p><div id="test-games"></div><button id="test-save" type="button">Save this player’s test picks</button> <button id="test-publish" type="button">Publish test picks</button> <button id="test-hide" type="button">Hide test picks</button> <button id="test-reset" type="button">Reset Week test</button><p id="test-message" role="status" aria-live="polite"></p><div id="test-live"></div>';
+  panel.innerHTML='<h2>Weekly Test Run</h2><p class="notice"><b>Test only:</b> enter Scott, Ross, Ken and Jim picks here, then publish the test to preview the revealed-picks screen. These entries do not change production picks or create accounts for the other players.</p><label>Week <select id="test-week"></select></label> <label>Player <select id="test-player"></select></label> <button id="test-reload" type="button">Reload test</button><p id="test-status" class="muted"></p><div id="test-games"></div><button id="test-save" type="button">Save this player’s test picks</button> <button id="test-publish" type="button">Publish test picks</button> <button id="test-hide" type="button">Hide test picks</button> <button id="test-reset" type="button">Reset Week test</button><p id="test-message" role="status" aria-live="polite"></p><div id="test-live"></div>';
   production.after(panel);
   const el=id=>document.getElementById(id);
   let busy=false,weeks=[],games=[],state={participants:['Scott','Ross','Ken','Jim'],picks:[],is_live:false};
@@ -108,7 +108,7 @@
   }
   async function initialize(){
     const data=await api({action:'test_options'});weeks=data.weeks;state.participants=data.participants;
-    el('test-week').replaceChildren();for(const w of weeks){const o=document.createElement('option');o.value=w.id;o.textContent=w.season+' · Week '+w.week_number;el('test-week').append(o);}const current=weeks.find(w=>w.week_number===3)||weeks.slice().sort((a,b)=>b.week_number-a.week_number)[0];if(current)el('test-week').value=current.id;
+    el('test-week').replaceChildren();for(const w of weeks){const o=document.createElement('option');o.value=w.id;o.textContent=w.season+' · Week '+w.week_number;el('test-week').append(o);}const current=weeks.slice().sort((a,b)=>b.week_number-a.week_number)[0];if(current)el('test-week').value=current.id;
     el('test-player').replaceChildren();const blank=document.createElement('option');blank.value='';blank.textContent='Choose player';el('test-player').append(blank);for(const name of data.participants){const o=document.createElement('option');o.value=name;o.textContent=name;el('test-player').append(o);}await loadState();
   }
   el('adminBtn').addEventListener('click',()=>task(initialize));
