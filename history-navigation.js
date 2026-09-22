@@ -10,7 +10,9 @@
   async function weekData(n){
     const {data:w,error}=await sb.from('pool_weeks').select('*').eq('season',2026).eq('week_number',n).single();if(error)throw error;
     const {data:g,error:ge}=await sb.from('pool_games').select('*').eq('week_id',w.id).eq('selected_for_pool',true).order('kickoff_at');if(ge)throw ge;
-    const {data:live,error:le}=await sb.functions.invoke('pool-live',{body:{week_number:n}});if(le)throw le;if(live?.error)throw new Error(live.error);
+    let live=null;const {data:ld,error:le}=await sb.functions.invoke('pool-live',{body:{week_number:n}});if(!le&&!ld?.error)live=ld;
+    if(!live&&w.status==='graded'){const {data:s,error:se}=await sb.from('pool_week_result_snapshots').select('participant_name,wins,losses,pushes,points,payout').eq('week_id',w.id);if(se)throw se;if(s?.length)live={standings:s.map(x=>({name:x.participant_name,wins:x.wins,losses:x.losses,pushes:x.pushes,points:x.points,payout:Number(x.payout)})),picks:[],games:[]};}
+    if(!live)throw new Error('Finalized results unavailable');
     const by={};for(const x of live?.picks||[]){const gid=x.game_id??x.gameId,nm=x.participant_name??x.participant??x.name,pick=x.picked_team??x.pick;if(gid&&nm)(by[gid]??={})[nm]=pick;}
     return {w,g,p:by,live};
   }
@@ -23,7 +25,7 @@
     const card=document.querySelector('#history>.card');if(!card)return;if(n===1){card.innerHTML=week1HTML();return;}
     card.innerHTML='<h2>Week '+n+' — Historical Record</h2><p class="muted">Loading final Week '+n+' results…</p>';
     try{
-      const d=await weekData(n),rows=d.live?.standings||[],pay=payout(rows),liveGames=d.live?.games||[];
+      const d=await weekData(n),rows=d.live?.standings||[],snapPay=Object.fromEntries(rows.map(s=>[s.name,Number(s.payout)]).filter(x=>Number.isFinite(x[1]))),pay=Object.keys(snapPay).length?snapPay:payout(rows),liveGames=d.live?.games||[];
       const games=d.g.map(x=>{const lg=liveGames.find(z=>z.id===x.id)||{},winner=lg.ats_winner||null,final=(lg.away_score!=null&&lg.home_score!=null)?'<div class="muted">Final: '+esc(x.away_team)+' '+lg.away_score+'–'+lg.home_score+' '+esc(x.home_team)+' · ATS: '+esc(winner||'—')+'</div>':'';return '<div class="fg-hist-game"><div class="fg-hist-match"><b>'+esc(x.away_team)+' @ '+esc(x.home_team)+'</b><span>'+esc(x.favorite_team)+' '+esc(x.spread)+'</span></div>'+final+'<div class="fg-hist-picks">'+ORDER.map(name=>{const v=d.p[x.id]?.[name]||'—',push=winner==='Push',ok=winner&&v===winner;return '<div class="'+(winner?(push?'':ok?'fg-pick-win':'fg-pick-loss'):'')+'"><b>'+name+'</b><br><span>'+esc(v)+(winner&&!push?' '+(ok?'✓':'✕'):'')+'</span></div>';}).join('')+'</div></div>';}).join('');
       const sorted=ORDER.map(name=>rows.find(s=>s.name===name)||{name,wins:0,losses:0,pushes:0,points:0}).sort((a,b)=>Number(b.points)-Number(a.points));
       card.innerHTML='<h2>Week '+n+' — Historical Record</h2><p class="muted">Final Week '+n+' standings, money and picks.</p><div class="fg-standings">'+sorted.map((s,i)=>'<div class="fg-standing"><small>'+(i+1)+'</small><b>'+esc(s.name)+'</b><div>'+s.wins+'–'+s.losses+(s.pushes?'–'+s.pushes+' P':'')+' · '+s.points+' pts · <span class="'+(pay[s.name]>0?'fg-positive':pay[s.name]<0?'fg-negative':'')+'">'+money(pay[s.name]||0)+'</span></div></div>').join('')+'</div><h3 style="margin-top:28px">Week '+n+' Games</h3><div class="fg-hist-cards">'+games+'</div>';
