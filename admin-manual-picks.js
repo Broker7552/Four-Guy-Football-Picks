@@ -34,7 +34,7 @@
       for(const [value,text] of [['','Leave unchanged'],[game.away_team,game.away_team],[game.home_team,game.home_team]]){const option=document.createElement('option');option.value=value;option.textContent=text;select.append(option);}
       select.addEventListener('change',invalidate);label.append(select);row.append(label);el('manual-games').append(row);
     }
-    message(open()?'Enter only the picks supplied by the selected player. Unchosen games stay unchanged.':'This week’s production picks are locked. Use the Test Run panel below for post-deadline testing.');controls();
+    message(open()?'Enter only the picks supplied by the selected player. Unchosen games stay unchanged.':'This week’s picks are locked because the deadline has passed.');controls();
   }
   async function initialize(){
     const current=generation,data=await api({action:'manual_options'});if(current!==generation)return;
@@ -43,7 +43,7 @@
     const placeholder=document.createElement('option');placeholder.value='';placeholder.textContent='Choose player';el('manual-player').append(placeholder);
     for(const player of data.players){const o=document.createElement('option');o.value=player.user_id;o.textContent=player.display_name;el('manual-player').append(o);}
     for(const w of weeks){const o=document.createElement('option');o.value=w.id;o.textContent=w.season+' · Week '+w.week_number;el('manual-week').append(o);}
-    el('manual-members').textContent='Production entry only lists real registered pool accounts. Use the test panel below to simulate Scott, Ross, Ken and Jim during this test week.';
+    el('manual-members').textContent='Choose a registered player below when you need to enter or update picks on that player’s behalf.';
     await loadGames();
   }
   el('adminBtn').addEventListener('click',()=>task(initialize));
