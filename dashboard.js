@@ -23,7 +23,7 @@
     ensure(); const status=document.getElementById('dash-status'); if(!status)return;
     try{
       status.textContent='Refreshing standings…';
-      const weeks=await sb.from('pool_weeks').select('week_number').eq('season',2026).lte('week_number',week?.week_number||99).order('week_number');
+      const weeks=await sb.from('pool_weeks').select('week_number,status').eq('season',2026).order('week_number');
       if(weeks.error)throw weeks.error;
       const nums=(weeks.data||[]).map(x=>x.week_number);
       const current=week?.week_number||Math.max(...nums,1);
@@ -54,7 +54,7 @@
         const amount=(money>0?'+':money<0?'−':'')+'$'+Math.abs(money).toFixed(2);
         return '<div class="dash-player"><b>'+esc(name)+'</b><div class="dash-score">'+Number(s.points||0)+' pts</div><div class="dash-detail">Week '+current+': '+rec+'</div><div class="dash-season">Season thru Week '+current+':<br><span style="color:#16833b">'+season[name]+' pts</span><br>Season thru Week '+moneyThrough+':<br><span class="money-amount '+cls+'">'+amount+'</span></div></div>';
       }).join('')+'</div>';
-      status.textContent='Current weekly standings, season points and cumulative dollars';
+      status.textContent=(active.length?'Current weekly standings':'Final Week '+latestFinal+' standings')+', season points and cumulative dollars';
     }catch(e){status.textContent='Dashboard unavailable: '+(e?.message||'unknown error')}
   }
   window.loadDashboard=loadDashboard;
