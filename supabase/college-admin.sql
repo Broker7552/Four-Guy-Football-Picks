@@ -37,10 +37,17 @@ begin
       raise exception 'A week with configured deadlines is required';
     end if;
     if w.status='setup' then return to_jsonb(w); end if;
-    -- Preserve the configured Eastern wall-clock deadlines across DST changes.
+    if w.status not in ('published','open','picks_open','graded') then
+      raise exception 'The current week cannot be finalized from its present status';
+    end if;
+    -- Finalizing is explicit: preserve the completed week as graded before creating
+    -- the next setup week. The new week is never published by this action.
+    update public.pool_weeks set status='graded' where id=w.id and status<>'graded' returning * into w;
+    -- Preserve the configured Eastern wall-clock pick deadline across DST changes.
+    -- Spread lock is one hour before picks are due so the admin can prepare the week.
     insert into public.pool_weeks (season,week_number,representative_user_id,spread_lock_at,picks_due_at,picks_visible_at,status)
       values (w.season,w.week_number+1,p_actor,
-        ((w.spread_lock_at at time zone 'America/New_York')+interval '7 days') at time zone 'America/New_York',
+        ((((w.picks_due_at at time zone 'America/New_York')+interval '7 days')-interval '1 hour') at time zone 'America/New_York'),
         ((w.picks_due_at at time zone 'America/New_York')+interval '7 days') at time zone 'America/New_York',
         ((w.picks_visible_at at time zone 'America/New_York')+interval '7 days') at time zone 'America/New_York','setup') returning * into w;
     insert into public.pool_college_drafts(week_id) values(w.id);
