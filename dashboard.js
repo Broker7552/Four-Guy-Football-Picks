@@ -57,6 +57,29 @@
       status.textContent=(active.length?'Current weekly standings':'Final Week '+latestFinal+' standings')+', season points and cumulative dollars';
     }catch(e){status.textContent='Dashboard unavailable: '+(e?.message||'unknown error')}
   }
+
+  async function loadStandings(){
+    const status=document.getElementById('standings-status'),weekly=document.getElementById('standings-weekly'),seasonEl=document.getElementById('standings-season');if(!status||!weekly||!seasonEl)return;
+    try{
+      status.textContent='Refreshing finalized standings…';
+      const {data:weeks,error}=await sb.from('pool_weeks').select('week_number,status').eq('season',2026).eq('status','graded').order('week_number');if(error)throw error;
+      const nums=(weeks||[]).map(x=>x.week_number),latest=Math.max(...nums,1);
+      const live=await Promise.all(nums.filter(n=>n>=2).map(async n=>{const {data,error}=await sb.functions.invoke('pool-live',{body:{week_number:n}});return error||data?.error?null:{n,data};}));
+      const latestData=live.find(x=>x?.n===latest)?.data;
+      if(!latestData)throw new Error('Final Week '+latest+' standings are not available.');
+      const season=Object.fromEntries(ORDER.map(n=>[n,Number(FINAL_THRU_WEEK2[n]?.points||0)])),dollars=Object.fromEntries(ORDER.map(n=>[n,Number(FINAL_THRU_WEEK2[n]?.money||0)]));
+      for(const x of live){if(!x||x.n<3)continue;(x.data.standings||[]).forEach(s=>{if(season[s.name]!==undefined)season[s.name]+=Number(s.points||0)});const rows=ORDER.map(name=>({name,points:Number((x.data.standings||[]).find(s=>s.name===name)?.points||0)})).sort((a,b)=>b.points-a.points);const prizes=[18,2,-6,-14];let i=0;while(i<rows.length){let j=i+1;while(j<rows.length&&rows[j].points===rows[i].points)j++;const share=prizes.slice(i,j).reduce((a,b)=>a+b,0)/(j-i);for(let k=i;k<j;k++)dollars[rows[k].name]+=share;i=j}}
+      const sortNames=vals=>ORDER.slice().sort((a,b)=>vals[b]-vals[a]);
+      weekly.innerHTML='<h3>Week '+latest+'</h3><div class="dash-grid">'+sortNames(Object.fromEntries(ORDER.map(n=>[n,Number((latestData.standings||[]).find(s=>s.name===n)?.points||0)]))).map(name=>{const s=(latestData.standings||[]).find(x=>x.name===name)||{wins:0,losses:0,pushes:0,points:0};return '<div class="dash-player"><b>'+esc(name)+'</b><div class="dash-score">'+s.points+' pts</div><div class="dash-detail">'+s.wins+'-'+s.losses+(s.pushes?'-'+s.pushes+' P':'')+'</div></div>';}).join('')+'</div>';
+      seasonEl.innerHTML='<h3 style="margin-top:24px">Season Cumulative — Through Week '+latest+'</h3><div class="dash-grid">'+sortNames(season).map(name=>{const m=dollars[name],cls=m>0?'money-pos':m<0?'money-neg':'money-zero',amount=(m>0?'+':m<0?'−':'')+'
+  const oldShow=window.show; window.show=function(x){oldShow(x);if(x==='home')loadDashboard()};
+  const start=()=>{ensure();setTimeout(loadDashboard,800);setInterval(()=>{if(document.getElementById('home')?.classList.contains('show')&&!document.getElementById('app')?.classList.contains('hidden'))loadDashboard()},60000)};
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
+})();+Math.abs(m).toFixed(2);return '<div class="dash-player"><b>'+esc(name)+'</b><div class="dash-score">'+season[name]+' pts</div><div class="dash-detail"><span class="money-amount '+cls+'">'+amount+'</span></div></div>';}).join('')+'</div>';
+      document.getElementById('standings-title').textContent='Standings';status.textContent='Final Week '+latest+' results and cumulative season totals.';
+    }catch(e){status.textContent='Standings unavailable: '+(e?.message||'unknown error');}
+  }
+  window.loadStandings=loadStandings;
   window.loadDashboard=loadDashboard;
   const oldShow=window.show; window.show=function(x){oldShow(x);if(x==='home')loadDashboard()};
   const start=()=>{ensure();setTimeout(loadDashboard,800);setInterval(()=>{if(document.getElementById('home')?.classList.contains('show')&&!document.getElementById('app')?.classList.contains('hidden'))loadDashboard()},60000)};
