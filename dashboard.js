@@ -1,87 +1,20 @@
 (()=>{
-  const ORDER=['Ross','Scott','Jim','Ken'];
-  const FINAL_THRU_WEEK2={
-    Ross:{points:25,money:20},
-    Scott:{points:18,money:-14},
-    Jim:{points:18,money:-14},
-    Ken:{points:19,money:4}
-  };
-  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  function ensure(){
-    const home=document.getElementById('home'); if(!home)return;
-    let card=document.getElementById('dashboard-overview');
-    if(!card){
-      home.innerHTML='<div class="card" id="dashboard-overview"><h2>Week at a Glance</h2><p id="dash-status" class="muted">Loading current standings…</p><div id="dash-progress"></div><div id="dash-grid"></div></div>';
-      if(!document.getElementById('dashboard-style')){
-        const st=document.createElement('style');st.id='dashboard-style';
-        st.textContent='#dash-progress{font-weight:800;margin:10px 0 14px}.dash-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}.dash-player{background:#f7f9fc;border:1px solid #e1e7f0;border-radius:11px;padding:13px;text-align:center}.dash-player b{font-size:1.08rem}.dash-score{font-size:1.45rem;font-weight:900;margin:5px 0}.dash-detail{font-size:.9rem;color:#667085}.dash-season{margin-top:7px;padding-top:7px;border-top:1px solid #e1e7f0;font-weight:700}.money-pos{color:#16833b!important}.money-neg{color:#c62828!important}.money-zero{color:#111!important}.money-amount{display:inline-block;white-space:nowrap}@media(max-width:650px){.dash-grid{grid-template-columns:repeat(2,1fr)}}';
-        document.head.appendChild(st);
-      }
-    }
-  }
-  async function loadDashboard(){
-    ensure(); const status=document.getElementById('dash-status'); if(!status)return;
-    try{
-      status.textContent='Refreshing standings…';
-      const weeks=await sb.from('pool_weeks').select('week_number,status').eq('season',2026).order('week_number');
-      if(weeks.error)throw weeks.error;
-      const nums=(weeks.data||[]).map(x=>x.week_number);
-      const current=week?.week_number||Math.max(...nums,1);
-      const results=await Promise.all(nums.map(async n=>{try{const {data,error}=await sb.functions.invoke('pool-live',{body:{week_number:n}});return error||data?.error?null:data}catch{return null}}));
-      const cur=results[nums.indexOf(current)]||results.filter(Boolean).at(-1);
-      if(!cur)throw new Error('Current standings are not available yet.');
-      const season=Object.fromEntries(ORDER.map(n=>[n,Number(FINAL_THRU_WEEK2[n]?.points||0)]));
-      const dollars=Object.fromEntries(ORDER.map(n=>[n,Number(FINAL_THRU_WEEK2[n]?.money||0)]));
-      // Weeks 1-2 use the finalized totals shown on Standings.
-      // Add points/payouts from Week 3 onward.
-      results.forEach((d,idx)=>{
-        const n=nums[idx];
-        if(!d || n<3)return;
-        (d.standings||[]).forEach(s=>{if(season[s.name]!==undefined)season[s.name]+=Number(s.points||0)});
-        const games=d.games||[]; if(!games.length||games.some(g=>!g.completed))return;
-        const rows=ORDER.map(name=>({name,points:Number((d.standings||[]).find(s=>s.name===name)?.points||0)})).sort((a,b)=>b.points-a.points);
-        const prizes=[18,2,-6,-14]; let i=0;
-        while(i<rows.length){let j=i+1;while(j<rows.length&&rows[j].points===rows[i].points)j++;const share=prizes.slice(i,j).reduce((a,b)=>a+b,0)/(j-i);for(let k=i;k<j;k++)dollars[rows[k].name]+=share;i=j}
-      });
-      const completed=(cur.games||[]).filter(g=>g.completed).length,total=(cur.games||[]).length;
-      const moneyThrough=nums.reduce((last,n,idx)=>{if(n<=2)return Math.max(last,n);const d=results[idx];const games=d?.games||[];return games.length&&games.every(g=>g.completed)?Math.max(last,n):last;},0);
-      document.getElementById('dash-progress').textContent='Week '+current+' · '+completed+' of '+total+' games complete';
-      document.getElementById('dash-grid').innerHTML='<div class="dash-grid">'+ORDER.map(name=>{
-        const s=(cur.standings||[]).find(x=>x.name===name)||{wins:0,losses:0,pushes:0,points:0};
-        const rec=s.wins+'-'+s.losses+(s.pushes?'-'+s.pushes+' P':'');
-        const money=dollars[name];
-        const cls=money>0?'money-pos':money<0?'money-neg':'money-zero';
-        const amount=(money>0?'+':money<0?'−':'')+'$'+Math.abs(money).toFixed(2);
-        return '<div class="dash-player"><b>'+esc(name)+'</b><div class="dash-score">'+Number(s.points||0)+' pts</div><div class="dash-detail">Week '+current+': '+rec+'</div><div class="dash-season">Season thru Week '+current+':<br><span style="color:#16833b">'+season[name]+' pts</span><br>Season thru Week '+moneyThrough+':<br><span class="money-amount '+cls+'">'+amount+'</span></div></div>';
-      }).join('')+'</div>';
-      status.textContent=(active.length?'Current weekly standings':'Final Week '+latestFinal+' standings')+', season points and cumulative dollars';
-    }catch(e){status.textContent='Dashboard unavailable: '+(e?.message||'unknown error')}
-  }
-
-  async function loadStandings(){
-    const status=document.getElementById('standings-status'),weekly=document.getElementById('standings-weekly'),seasonEl=document.getElementById('standings-season');if(!status||!weekly||!seasonEl)return;
-    try{
-      status.textContent='Refreshing finalized standings…';
-      const {data:weeks,error}=await sb.from('pool_weeks').select('week_number,status').eq('season',2026).eq('status','graded').order('week_number');if(error)throw error;
-      const nums=(weeks||[]).map(x=>x.week_number),latest=Math.max(...nums,1);
-      const live=await Promise.all(nums.filter(n=>n>=2).map(async n=>{const {data,error}=await sb.functions.invoke('pool-live',{body:{week_number:n}});return error||data?.error?null:{n,data};}));
-      const latestData=live.find(x=>x?.n===latest)?.data;
-      if(!latestData)throw new Error('Final Week '+latest+' standings are not available.');
-      const season=Object.fromEntries(ORDER.map(n=>[n,Number(FINAL_THRU_WEEK2[n]?.points||0)])),dollars=Object.fromEntries(ORDER.map(n=>[n,Number(FINAL_THRU_WEEK2[n]?.money||0)]));
-      for(const x of live){if(!x||x.n<3)continue;(x.data.standings||[]).forEach(s=>{if(season[s.name]!==undefined)season[s.name]+=Number(s.points||0)});const rows=ORDER.map(name=>({name,points:Number((x.data.standings||[]).find(s=>s.name===name)?.points||0)})).sort((a,b)=>b.points-a.points);const prizes=[18,2,-6,-14];let i=0;while(i<rows.length){let j=i+1;while(j<rows.length&&rows[j].points===rows[i].points)j++;const share=prizes.slice(i,j).reduce((a,b)=>a+b,0)/(j-i);for(let k=i;k<j;k++)dollars[rows[k].name]+=share;i=j}}
-      const sortNames=vals=>ORDER.slice().sort((a,b)=>vals[b]-vals[a]);
-      weekly.innerHTML='<h3>Week '+latest+'</h3><div class="dash-grid">'+sortNames(Object.fromEntries(ORDER.map(n=>[n,Number((latestData.standings||[]).find(s=>s.name===n)?.points||0)]))).map(name=>{const s=(latestData.standings||[]).find(x=>x.name===name)||{wins:0,losses:0,pushes:0,points:0};return '<div class="dash-player"><b>'+esc(name)+'</b><div class="dash-score">'+s.points+' pts</div><div class="dash-detail">'+s.wins+'-'+s.losses+(s.pushes?'-'+s.pushes+' P':'')+'</div></div>';}).join('')+'</div>';
-      seasonEl.innerHTML='<h3 style="margin-top:24px">Season Cumulative — Through Week '+latest+'</h3><div class="dash-grid">'+sortNames(season).map(name=>{const m=dollars[name],cls=m>0?'money-pos':m<0?'money-neg':'money-zero',amount=(m>0?'+':m<0?'−':'')+'
-  const oldShow=window.show; window.show=function(x){oldShow(x);if(x==='home')loadDashboard()};
-  const start=()=>{ensure();setTimeout(loadDashboard,800);setInterval(()=>{if(document.getElementById('home')?.classList.contains('show')&&!document.getElementById('app')?.classList.contains('hidden'))loadDashboard()},60000)};
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
-})();+Math.abs(m).toFixed(2);return '<div class="dash-player"><b>'+esc(name)+'</b><div class="dash-score">'+season[name]+' pts</div><div class="dash-detail"><span class="money-amount '+cls+'">'+amount+'</span></div></div>';}).join('')+'</div>';
-      document.getElementById('standings-title').textContent='Standings';status.textContent='Final Week '+latest+' results and cumulative season totals.';
-    }catch(e){status.textContent='Standings unavailable: '+(e?.message||'unknown error');}
-  }
-  window.loadStandings=loadStandings;
-  window.loadDashboard=loadDashboard;
-  const oldShow=window.show; window.show=function(x){oldShow(x);if(x==='home')loadDashboard()};
-  const start=()=>{ensure();setTimeout(loadDashboard,800);setInterval(()=>{if(document.getElementById('home')?.classList.contains('show')&&!document.getElementById('app')?.classList.contains('hidden'))loadDashboard()},60000)};
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
+const ORDER=['Ross','Scott','Jim','Ken'],BASE={Ross:{points:25,money:20},Scott:{points:18,money:-14},Jim:{points:18,money:-14},Ken:{points:19,money:4}},PRIZES=[18,2,-6,-14];
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money=n=>(n>0?'+':n<0?'−':'')+'$'+Math.abs(n).toFixed(2),mcls=n=>n>0?'money-pos':n<0?'money-neg':'money-zero';
+function ensure(){const home=document.getElementById('home');if(!home)return;if(!document.getElementById('dashboard-overview'))home.innerHTML='<div class="card" id="dashboard-overview"><h2>Week at a Glance</h2><p id="dash-status" class="muted">Loading current standings…</p><div id="dash-progress"></div><div id="dash-grid"></div></div>';if(!document.getElementById('dashboard-style')){const s=document.createElement('style');s.id='dashboard-style';s.textContent='#dash-progress{font-weight:800;margin:10px 0 14px}.dash-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}.dash-player{background:#f7f9fc;border:1px solid #e1e7f0;border-radius:11px;padding:13px;text-align:center}.dash-player b{font-size:1.08rem}.dash-score{font-size:1.45rem;font-weight:900;margin:5px 0}.dash-detail{font-size:.9rem;color:#667085}.dash-season{margin-top:7px;padding-top:7px;border-top:1px solid #e1e7f0;font-weight:700}.money-pos{color:#16833b!important}.money-neg{color:#c62828!important}.money-zero{color:#111!important}.money-amount{display:inline-block;white-space:nowrap}@media(max-width:650px){.dash-grid{grid-template-columns:repeat(2,1fr)}}';document.head.appendChild(s);}}
+async function live(n){try{const {data,error}=await sb.functions.invoke('pool-live',{body:{week_number:n}});return error||data?.error?null:data}catch{return null}}
+function addPayout(dollars,d){const rows=ORDER.map(name=>({name,points:Number((d.standings||[]).find(s=>s.name===name)?.points||0)})).sort((a,b)=>b.points-a.points);let i=0;while(i<rows.length){let j=i+1;while(j<rows.length&&rows[j].points===rows[i].points)j++;const share=PRIZES.slice(i,j).reduce((a,b)=>a+b,0)/(j-i);for(let k=i;k<j;k++)dollars[rows[k].name]+=share;i=j}}
+async function model(){
+ const {data:weeks,error}=await sb.from('pool_weeks').select('week_number,status').eq('season',2026).order('week_number');if(error)throw error;
+ const graded=weeks.filter(w=>w.status==='graded').map(w=>w.week_number),active=weeks.filter(w=>['published','open','picks_open'].includes(w.status)).map(w=>w.week_number),latestFinal=Math.max(...graded,1),display=active.length?Math.max(...active):latestFinal;
+ const needed=[...new Set(weeks.filter(w=>w.week_number>=2&&w.week_number<=display).map(w=>w.week_number))],pairs=await Promise.all(needed.map(async n=>[n,await live(n)])),by=Object.fromEntries(pairs),cur=by[display];if(!cur)throw new Error('Week '+display+' standings are not available yet.');
+ const season=Object.fromEntries(ORDER.map(n=>[n,BASE[n].points])),dollars=Object.fromEntries(ORDER.map(n=>[n,BASE[n].money]));
+ for(const n of needed){const d=by[n];if(!d||n<3)continue;(d.standings||[]).forEach(s=>{if(season[s.name]!=null)season[s.name]+=Number(s.points||0)});if(graded.includes(n))addPayout(dollars,d);}
+ return {display,latestFinal,isActive:active.includes(display),cur,season,dollars};
+}
+function cards(m){return '<div class="dash-grid">'+ORDER.map(name=>{const s=(m.cur.standings||[]).find(x=>x.name===name)||{wins:0,losses:0,pushes:0,points:0};return '<div class="dash-player"><b>'+esc(name)+'</b><div class="dash-score">'+Number(s.points||0)+' pts</div><div class="dash-detail">Week '+m.display+': '+s.wins+'-'+s.losses+(s.pushes?'-'+s.pushes+' P':'')+'</div><div class="dash-season">Season thru Week '+m.display+':<br><span>'+m.season[name]+' pts</span><br><span class="money-amount '+mcls(m.dollars[name])+'">'+money(m.dollars[name])+'</span></div></div>';}).join('')+'</div>'}
+async function loadDashboard(){ensure();const status=document.getElementById('dash-status');if(!status)return;try{status.textContent='Refreshing standings…';const m=await model(),done=(m.cur.games||[]).filter(g=>g.completed).length,total=(m.cur.games||[]).length;document.getElementById('dash-progress').textContent=(m.isActive?'Week ':'Final Week ')+m.display+' · '+done+' of '+total+' games complete';document.getElementById('dash-grid').innerHTML=cards(m);status.textContent=(m.isActive?'Current Week '+m.display:'Final Week '+m.display)+' standings and season cumulative totals';}catch(e){status.textContent='Dashboard unavailable: '+(e?.message||'unknown error');}}
+async function loadStandings(){const status=document.getElementById('standings-status'),weekly=document.getElementById('standings-weekly'),seasonEl=document.getElementById('standings-season');if(!status||!weekly||!seasonEl)return;try{status.textContent='Refreshing finalized standings…';const {data:weeks,error}=await sb.from('pool_weeks').select('week_number').eq('season',2026).eq('status','graded').order('week_number');if(error)throw error;const nums=weeks.map(x=>x.week_number),latest=Math.max(...nums,1),d=await live(latest);if(!d)throw new Error('Final Week '+latest+' standings are not available.');const season=Object.fromEntries(ORDER.map(n=>[n,BASE[n].points])),dollars=Object.fromEntries(ORDER.map(n=>[n,BASE[n].money]));for(const n of nums.filter(n=>n>=3)){const x=await live(n);if(!x)continue;(x.standings||[]).forEach(s=>{if(season[s.name]!=null)season[s.name]+=Number(s.points||0)});addPayout(dollars,x);}const vals=Object.fromEntries(ORDER.map(n=>[n,Number((d.standings||[]).find(s=>s.name===n)?.points||0)])),sort=v=>ORDER.slice().sort((a,b)=>v[b]-v[a]);weekly.innerHTML='<h3>Week '+latest+'</h3><div class="dash-grid">'+sort(vals).map(name=>{const s=(d.standings||[]).find(x=>x.name===name)||{wins:0,losses:0,pushes:0,points:0};return '<div class="dash-player"><b>'+name+'</b><div class="dash-score">'+s.points+' pts</div><div class="dash-detail">'+s.wins+'-'+s.losses+(s.pushes?'-'+s.pushes+' P':'')+'</div></div>';}).join('')+'</div>';seasonEl.innerHTML='<h3>Season Cumulative — Through Week '+latest+'</h3><div class="dash-grid">'+sort(season).map(name=>'<div class="dash-player"><b>'+name+'</b><div class="dash-score">'+season[name]+' pts</div><div class="dash-detail"><span class="money-amount '+mcls(dollars[name])+'">'+money(dollars[name])+'</span></div></div>').join('')+'</div>';status.textContent='Final Week '+latest+' results and cumulative season totals.';}catch(e){status.textContent='Standings unavailable: '+(e?.message||'unknown error');}}
+window.loadDashboard=loadDashboard;window.loadStandings=loadStandings;const oldShow=window.show;window.show=function(x){oldShow(x);if(x==='home')loadDashboard();if(x==='standings')loadStandings();};const start=()=>{ensure();setTimeout(loadDashboard,400);setInterval(()=>{if(document.getElementById('home')?.classList.contains('show')&&!document.getElementById('app')?.classList.contains('hidden'))loadDashboard()},60000)};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
 })();
