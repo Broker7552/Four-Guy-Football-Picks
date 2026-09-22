@@ -15,7 +15,7 @@
     el('college-discard-revision').disabled=busy;
     el('college-edit-save').disabled=busy;
     el('college-week').disabled=busy;
-    el('college-next').disabled=busy;
+    el('college-next').disabled=busy || !state || state.week.status==='setup';
     el('college-reload').disabled=busy;
     for(const id of ['college-refresh','college-save','college-review']) el(id).disabled=busy || !editable();
     el('college-confirm').disabled=busy || !editable() || (state?.revision && (!revisionReview || (revisionReview.changes.some(c=>c.pick_count>0) && !el('college-ack-picks').checked)));
@@ -99,7 +99,11 @@
   el('college-reload').addEventListener('click',()=>task(()=>listWeeks(state?.week.id)));
   el('college-week').addEventListener('change',()=>task(loadWeek));
   el('college-next').addEventListener('click',()=>task(async()=>{
+    if(!state || state.week.status==='setup') return;
+    const weekNumber=state.week.week_number;
+    if(!confirm('Finalize Week '+weekNumber+' and prepare Week '+(weekNumber+1)+'? Week '+weekNumber+' will be locked as Historical. The new week will remain in Setup and will NOT be published.')) { message('Nothing changed.'); return; }
     const {week}=await api({action:'prepare_next'});await listWeeks(week.id);
+    message('Week '+weekNumber+' finalized. Week '+week.week_number+' is ready for setup and is not published.');
   }));
   el('college-save').addEventListener('click',()=>task(async()=>{await save();render();message('Draft saved. Current Picks has not changed.');}));
   el('college-refresh').addEventListener('click',()=>task(async()=>{
