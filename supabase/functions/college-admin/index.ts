@@ -39,7 +39,12 @@ export async function handle(req, env=Deno.env.get, fetcher=fetch) {
     const weeks=await db('pool_weeks?id=eq.'+input.week_id+'&select=*');
     const week=weeks[0];
     if(!week) return reply({error:'Week not found'},404);
-    if(input.action==='manual_get') return reply({games:await db('pool_games?week_id=eq.'+week.id+'&published=eq.true&selected_for_pool=eq.true&select=id,home_team,away_team,favorite_team,spread&order=kickoff_at')});
+    if(input.action==='manual_get') {
+      const games=await db('pool_games?week_id=eq.'+week.id+'&published=eq.true&selected_for_pool=eq.true&select=id,home_team,away_team,favorite_team,spread&order=kickoff_at');
+      // The administrator was checked above; keep private selections behind this endpoint.
+      const picks=games.length ? await db('pool_picks?game_id=in.('+games.map(g=>g.id).join(',')+')&select=game_id,user_id,picked_team') : [];
+      return reply({games,picks});
+    }
     if(input.action==='manual_review' || input.action==='manual_save') {
       const result=await db('rpc/manage_manual_picks',{p_action:input.action==='manual_review'?'review':'save',p_actor:user.id,p_player:input.player_id,p_week_id:week.id,p_picks:input.picks,p_token:input.token ?? null,p_acknowledge:input.acknowledge===true});
       return reply(input.action==='manual_review'?{review:result}:result);
