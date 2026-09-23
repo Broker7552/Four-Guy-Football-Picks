@@ -22,7 +22,7 @@
       select.dataset.saved=select.value;
     }
     el('manual-members').textContent=player
-      ? el('manual-player').selectedOptions[0].textContent+' has '+theirs.length+' of '+games.length+' picks saved. Select a different team to correct a pick.'
+      ? 'Showing '+players.find(p=>p.user_id===player)?.display_name+'’s saved picks ('+theirs.length+' of '+games.length+'). Select a different team to correct a pick.'
       : 'Choose a player to view their saved picks.';
     controls();
   }
