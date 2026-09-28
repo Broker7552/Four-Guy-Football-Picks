@@ -43,7 +43,8 @@
     let live=buttons.find(b=>['week 3 live','weekly live'].includes(b.textContent.trim().toLowerCase()));if(!live){live=document.createElement('button');live.type='button';}live.textContent='Weekly Live';live.onclick=()=>{show('live-week');if(window.loadLiveWeek)loadLiveWeek();};
     let stand=buttons.find(b=>b.textContent.trim().toLowerCase()==='standings');if(!stand){stand=document.createElement('button');stand.type='button';stand.textContent='Standings';stand.onclick=()=>{show('standings');if(window.loadStandings)loadStandings();};}
     let hist=buttons.find(b=>b.textContent.toLowerCase().includes('historical'));if(!hist){hist=document.createElement('button');hist.type='button';}hist.textContent='Historical';hist.onclick=()=>{show('history');const v=Number(document.getElementById('history-week-select')?.value||1);renderHistory(v);};
-    const rules=buttons.find(b=>b.textContent.trim()==='Rules'),admin=buttons.find(b=>b.id==='adminBtn');nav.innerHTML='';[glance,roster,live,stand,hist,rules,admin].filter(Boolean).forEach(b=>nav.appendChild(b));
+    const baseball=buttons.find(b=>b.id==='baseballBtn');
+    const rules=buttons.find(b=>b.textContent.trim()==='Rules'),admin=buttons.find(b=>b.id==='adminBtn');nav.innerHTML='';[glance,baseball,roster,live,stand,hist,rules,admin].filter(Boolean).forEach(b=>nav.appendChild(b));
   }
   async function selector(){
     const card=document.querySelector('#history>.card');if(!card)return;let wrap=document.getElementById('history-week-picker');if(!wrap){wrap=document.createElement('div');wrap.id='history-week-picker';wrap.className='notice';wrap.innerHTML='<label><b>Historical week</b> <select id="history-week-select" class="fg-history-select"></select></label>';card.parentNode.insertBefore(wrap,card);}
