@@ -22,8 +22,8 @@
   const isPrimeTimeNFL=g=>{if(g.sport!=='nfl')return false;const kickoff=easternKickoff(g);return kickoff&&(kickoff.day==='Sun'&&kickoff.hour>=19||kickoff.day==='Mon');};
   function projection(data){
     const remaining=data.games.filter(g=>!g.completed);
-    // Wait until the Sunday afternoon slate is final. Then only SNF and MNF remain.
-    if(!remaining.length||remaining.some(g=>!isPrimeTimeNFL(g))||!remaining.some(g=>easternKickoff(g)?.day==='Sun'))return '';
+    // Show scenarios after the afternoon slate, including Monday night after SNF is final.
+    if(!remaining.length||remaining.some(g=>!isPrimeTimeNFL(g)))return '';
     const nowPts=Object.fromEntries(ORDER.map(n=>[n,Number(data.standings.find(s=>s.name===n)?.points||0)]));
     const currentRanked=ORDER.slice().sort((a,b)=>nowPts[b]-nowPts[a]);const currentPlace={};let cp=0;while(cp<currentRanked.length){let ce=cp+1;while(ce<currentRanked.length&&nowPts[currentRanked[ce]]===nowPts[currentRanked[cp]])ce++;const cl=(cp+1)+(cp===0?'st':cp===1?'nd':cp===2?'rd':'th');for(let j=cp;j<ce;j++)currentPlace[currentRanked[j]]=cl;cp=ce;}const scenarioGames=remaining.filter(g=>ORDER.some(n=>pickFor(data,g.id,n)!=='—')).slice(0,6);
     const scenarios=scenarioGames.map(g=>{
