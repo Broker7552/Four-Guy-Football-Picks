@@ -1,6 +1,7 @@
 /* Records and logos for the actual scheduled games on the picks roster. */
 (()=>{
   const cache=new Map();
+  let apPoll;
   const clean=name=>String(name||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'');
   const dateKey=value=>{
     const parts=new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date(value));
@@ -16,13 +17,24 @@
     }
     return cache.get(key);
   }
+  function rankings(){
+    if(!apPoll){
+      apPoll=fetch('https://site.api.espn.com/apis/site/v2/sports/football/college-football/rankings')
+        .then(r=>{if(!r.ok)throw new Error('Poll unavailable');return r.json()})
+        .then(data=>{
+          const ap=data.rankings?.find(p=>p.name==='AP Top 25');
+          return new Map((ap?.ranks||[]).map(rank=>[String(rank.team.id),rank.current]));
+        }).catch(()=>new Map());
+    }
+    return apPoll;
+  }
   function teamMatches(name,team){
     return [team.school,team.location,team.displayName,team.shortDisplayName].some(alias=>clean(alias)===clean(name));
   }
   function competitor(event,name){
     return event.competitions?.[0]?.competitors?.find(c=>teamMatches(name,c.team||{}));
   }
-  function updateCard(game,events){
+  function updateCard(game,events,apRanks){
     const card=document.querySelector('#games .card[data-game-id="'+game.id+'"]');
     if(!card)return;
     // Match both sides so a common school name cannot pick an unrelated event.
@@ -40,10 +52,24 @@
         if(!logo){logo=document.createElement('img');logo.className='fg-team-logo';logo.alt='';logo.loading='lazy';button.prepend(logo);}
         if(logo.src!==url)logo.src=url;
       }
+      if(game.sport==='college'){
+        const rank=apRanks.get(String(side.team?.id));
+        let badge=button.querySelector('.fg-ap-rank');
+        if(rank&&rank<=25){
+          if(!badge){badge=document.createElement('span');badge.className='fg-ap-rank';button.append(badge);}
+          badge.textContent='AP #'+rank;
+        }else if(badge)badge.remove();
+      }
     });
   }
   async function refresh(games){
     const current=[...(games||[])];
+    if(!document.getElementById('fg-ap-style')){
+      const style=document.createElement('style');
+      style.id='fg-ap-style';
+      style.textContent='#games section[aria-labelledby="college-heading"] button.pick{padding-top:20px!important;min-height:96px!important}.fg-ap-rank{position:absolute;top:5px;left:0;right:0;text-align:center;color:#435b79;font-size:12px;font-weight:800;line-height:1.2}';
+      document.head.append(style);
+    }
     for(const game of current){
       const card=document.querySelector('#games .card[data-game-id="'+game.id+'"]');
       if(!card)continue;
@@ -54,9 +80,10 @@
         if(!kickoff.textContent.includes(day))kickoff.textContent=kickoff.textContent.replace(/^Kickoff:\s*(?:\w+\s*·\s*)?/, 'Kickoff: '+day+' · ');
       }
     }
+    const apRanksPromise=rankings();
     await Promise.all(current.filter(g=>g.kickoff_at).map(async game=>{
-      const events=await schedule(game.sport,dateKey(game.kickoff_at));
-      updateCard(game,events);
+      const [events,apRanks]=await Promise.all([schedule(game.sport,dateKey(game.kickoff_at)),apRanksPromise]);
+      updateCard(game,events,apRanks);
     }));
   }
   window.refreshRosterMetadata=refresh;
