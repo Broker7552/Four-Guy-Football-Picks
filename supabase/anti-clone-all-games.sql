@@ -18,7 +18,7 @@ as $fn$
 declare due timestamptz; pub boolean;
 begin
   if tg_op='UPDATE'
-     and current_setting('request.jwt.claim.role',true)='service_role'
+     and auth.role()='service_role'
      and new.game_id=old.game_id and new.user_id=old.user_id
      and new.was_anti_clone_flip=true and old.was_anti_clone_flip=false
      and new.picked_team is distinct from old.picked_team
