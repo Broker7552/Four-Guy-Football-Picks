@@ -28,7 +28,7 @@ Deno.serve(async req=>{
   let series=await db('pool_baseball_series?season=eq.2026&select=*&order=lock_at');
   // MLB's official postseason schedule supplies final game results. An outage leaves stored results intact.
   let games:any[]=[];let feedError='';
-  try{const r=await fetch('https://statsapi.mlb.com/api/v1/schedule?sportId=1&gameTypes=F&startDate=2026-09-29&endDate=2026-10-01',{signal:AbortSignal.timeout(10000)});if(!r.ok)throw Error('MLB schedule unavailable');const feed=await r.json();games=(feed.dates||[]).flatMap((d:any)=>d.games||[])}catch(e){feedError='MLB results temporarily unavailable'}
+  try{const r=await fetch('https://statsapi.mlb.com/api/v1/schedule?sportId=1&gameTypes=F,D,L,W&startDate=2026-09-29&endDate=2026-10-31',{signal:AbortSignal.timeout(10000)});if(!r.ok)throw Error('MLB schedule unavailable');const feed=await r.json();games=(feed.dates||[]).flatMap((d:any)=>d.games||[])}catch(e){feedError='MLB results temporarily unavailable'}
   for(const s of series){
    if(Date.now()<new Date(s.lock_at).getTime()||s.winner_mlb_id)continue;
    const results=games.filter(g=>g.status?.abstractGameState==='Final'&&[g.teams?.away?.team?.id,g.teams?.home?.team?.id].sort().join(',')===[s.away_mlb_id,s.home_mlb_id].sort().join(','));

@@ -67,3 +67,14 @@ values
 (2026,'wild_card','Wild Card','Boston Red Sox',111,5,'New York Yankees',147,3,'NYY -170 / BOS +140','2026-09-30 00:00:00+00',2),
 (2026,'wild_card','Wild Card','Chicago Cubs',112,4,'San Diego Padres',135,4,'SD -120 / CHC +100','2026-09-30 02:00:00+00',2)
 on conflict(season,round_key,away_mlb_id,home_mlb_id) do nothing;
+
+-- Division Series Game 1 begins October 3; pool picks close Friday at 5 p.m. Eastern.
+-- Series prices at setup determine the same 3–5 point bands as Wild Card.
+insert into public.pool_baseball_series
+(season,round_key,round_name,away_team,away_mlb_id,away_points,home_team,home_mlb_id,home_points,odds_note,lock_at,wins_needed)
+values
+(2026,'division','Division','Chicago White Sox',145,5,'Cleveland Guardians',114,4,'CLE -140 / CWS +120','2026-10-02 21:00:00+00',3),
+(2026,'division','Division','Atlanta Braves',144,5,'Los Angeles Dodgers',119,3,'LAD -230 / ATL +190','2026-10-02 21:00:00+00',3),
+(2026,'division','Division','New York Yankees',147,4,'Tampa Bay Rays',139,4,'NYY -120 / TB +100','2026-10-02 21:00:00+00',3),
+(2026,'division','Division','San Diego Padres',135,5,'Milwaukee Brewers',158,3,'MIL -180 / SD +150','2026-10-02 21:00:00+00',3)
+on conflict(season,round_key,away_mlb_id,home_mlb_id) do nothing;

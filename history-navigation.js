@@ -36,19 +36,26 @@
       card.innerHTML='<h2>Week '+n+' — Historical Record</h2><p class="muted">Final Week '+n+' standings, money and picks.</p><div class="fg-standings">'+sorted.map((s,i)=>'<div class="fg-standing"><small>'+(i+1)+'</small><b>'+esc(s.name)+'</b><div>'+s.wins+'–'+s.losses+(s.pushes?'–'+s.pushes+' P':'')+' · '+s.points+' pts · <span class="'+(pay[s.name]>0?'fg-positive':pay[s.name]<0?'fg-negative':'')+'">'+money(pay[s.name]||0)+'</span></div></div>').join('')+'</div><h3 style="margin-top:28px">Week '+n+' Games</h3><div class="fg-hist-cards">'+games+'</div>';
     }catch(e){card.innerHTML='<h2>Week '+n+' — Historical Record</h2><p>Unable to load Week '+n+' history.</p>';}
   }
+  function renderSelection(value){if(value?.startsWith('baseball:')){window.loadBaseballHistory?.(value.slice(9));return;}renderHistory(Number(value)||1);}
   function rebuildNav(){
     const nav=document.querySelector('#app nav');if(!nav)return;const buttons=[...nav.querySelectorAll('button')];
     let glance=buttons.find(b=>['week at a glance','dashboard'].includes(b.textContent.trim().toLowerCase()));if(!glance){glance=document.createElement('button');glance.type='button';}glance.textContent='Week at a Glance';glance.onclick=()=>show('home');
     let roster=buttons.find(b=>['current picks','week 3','current games','weekly picks','games roster','make your picks'].includes(b.textContent.trim().toLowerCase()));if(!roster){roster=document.createElement('button');roster.type='button';}const setRosterLabel=()=>{roster.textContent=window.fgPicksLocked?'Games Roster':'MAKE YOUR PICKS';roster.classList.toggle('fg-make-picks-nav',!window.fgPicksLocked)};setRosterLabel();window.updatePickNav=setRosterLabel;roster.onclick=()=>show('picks');
     let live=buttons.find(b=>['week 3 live','weekly live'].includes(b.textContent.trim().toLowerCase()));if(!live){live=document.createElement('button');live.type='button';}live.textContent='Weekly Live';live.onclick=()=>{show('live-week');if(window.loadLiveWeek)loadLiveWeek();};
     let stand=buttons.find(b=>b.textContent.trim().toLowerCase()==='standings');if(!stand){stand=document.createElement('button');stand.type='button';stand.textContent='Standings';stand.onclick=()=>{show('standings');if(window.loadStandings)loadStandings();};}
-    let hist=buttons.find(b=>b.textContent.toLowerCase().includes('historical'));if(!hist){hist=document.createElement('button');hist.type='button';}hist.textContent='Historical';hist.onclick=()=>{show('history');const v=Number(document.getElementById('history-week-select')?.value||1);renderHistory(v);};
+    let hist=buttons.find(b=>b.textContent.toLowerCase().includes('historical'));if(!hist){hist=document.createElement('button');hist.type='button';}hist.textContent='Historical';hist.onclick=()=>{show('history');renderSelection(document.getElementById('history-week-select')?.value||'1');};
     const baseball=buttons.find(b=>b.id==='baseballBtn');
     const rules=buttons.find(b=>b.textContent.trim()==='Rules'),admin=buttons.find(b=>b.id==='adminBtn');nav.innerHTML='';[glance,baseball,roster,live,stand,hist,rules,admin].filter(Boolean).forEach(b=>nav.appendChild(b));
   }
   async function selector(){
     const card=document.querySelector('#history>.card');if(!card)return;let wrap=document.getElementById('history-week-picker');if(!wrap){wrap=document.createElement('div');wrap.id='history-week-picker';wrap.className='notice';wrap.innerHTML='<label><b>Historical week</b> <select id="history-week-select" class="fg-history-select"></select></label>';card.parentNode.insertBefore(wrap,card);}
-    const sel=document.getElementById('history-week-select');try{const weeks=await completedWeeks(),nums=[...new Set([...weeks.map(w=>w.week_number),1])].sort((a,b)=>b-a);sel.innerHTML=nums.map(n=>'<option value="'+n+'">Week '+n+'</option>').join('');sel.onchange=()=>renderHistory(Number(sel.value));await renderHistory(nums[0]);}catch{sel.innerHTML='<option value="1">Week 1</option>';sel.onchange=()=>renderHistory(1);renderHistory(1);}
+    const sel=document.getElementById('history-week-select');sel.onchange=()=>renderSelection(sel.value);
+    try{
+      const weeks=await completedWeeks(),nums=[...new Set([...weeks.map(w=>w.week_number),1])].sort((a,b)=>b-a);
+      sel.innerHTML=nums.map(n=>'<option value="'+n+'">Week '+n+'</option>').join('');
+      try{const {data,error}=await sb.functions.invoke('pool-baseball',{body:{}});if(!error&&!data?.error){const rounds={};for(const s of data.series||[])(rounds[s.round_key]??=[]).push(s);const finished=Object.entries(rounds).filter(([,series])=>series.length&&series.every(s=>s.winner_mlb_id));sel.innerHTML=finished.map(([key,series])=>'<option value="baseball:'+esc(key)+'">Baseball — '+esc(series[0].round_name)+'</option>').join('')+sel.innerHTML;}}catch{}
+      renderSelection(sel.value);
+    }catch{sel.innerHTML='<option value="1">Week 1</option>';renderHistory(1);}
   }
   async function currentWeek(){try{const {data}=await sb.from('pool_weeks').select('week_number').in('status',['setup','published','open','picks_open']).order('week_number',{ascending:false}).limit(1);const n=data?.[0]?.week_number;if(n){const h=document.querySelector('#picks h2');if(h)h.textContent='Week '+n+' — Current Week';}}catch{}}
   function start(){styles();rebuildNav();selector();currentWeek();}
