@@ -9,6 +9,23 @@
     return get('year')+get('month')+get('day');
   };
   const sportPath=sport=>sport==='nfl'?'football/nfl':'football/college-football';
+  // Confirmed broadcasts for the published Week 5 roster. Schedule metadata
+  // supplies broadcasts for later weeks and can change closer to kickoff.
+  const confirmed={77:'NFL Network',78:'CBS',79:'FOX',80:'FOX',81:'CBS',82:'FOX',83:'CBS',84:'FOX',85:'CBS',86:'FOX',87:'CBS',88:'CBS',89:'CBS',90:'NBC',91:'ESPN',92:'FOX',93:'ABC',94:'ESPN',95:'ABC',96:'ACC Network',97:'CBS',98:'SEC Network',99:'ABC'};
+  function eventNetwork(event){
+    const competition=event?.competitions?.[0]||{};
+    const broadcasts=(competition.broadcasts||[]).flatMap(b=>b.names||[]);
+    const geo=(competition.geoBroadcasts||[]).filter(b=>b.type?.shortName==='TV'||b.type?.shortName==='Streaming').map(b=>b.media?.shortName);
+    return [...broadcasts,...geo,competition.broadcast,event?.broadcast].find(x=>typeof x==='string'&&x.trim())||'';
+  }
+  function gameNetwork(game,event){return confirmed[game.id]||eventNetwork(event)||game.network||game.tv_network||game.broadcast_network||'';}
+  window.fgNetworkForGame=gameNetwork;
+  function setNetwork(card,network){
+    if(!network)return;
+    let badge=card.querySelector('.fg-network');
+    if(!badge){badge=document.createElement('span');badge.className='fg-network';card.prepend(badge);}
+    badge.textContent=network;
+  }
   function schedule(sport,date){
     const key=sport+':'+date;
     if(!cache.has(key)){
@@ -40,6 +57,7 @@
     // Match both sides so a common school name cannot pick an unrelated event.
     const event=events.find(e=>competitor(e,game.away_team)&&competitor(e,game.home_team));
     if(!event)return;
+    setNetwork(card,gameNetwork(game,event));
     card.querySelectorAll('button.pick').forEach(button=>{
       const side=competitor(event,button.dataset.team);
       if(!side)return;
@@ -73,6 +91,7 @@
     for(const game of current){
       const card=document.querySelector('#games .card[data-game-id="'+game.id+'"]');
       if(!card)continue;
+      setNetwork(card,gameNetwork(game));
       card.querySelectorAll('.fg-team-record').forEach(record=>{record.textContent='Record: —'});
       const kickoff=card.querySelector('.muted');
       if(kickoff&&game.kickoff_at){

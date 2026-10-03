@@ -13,6 +13,12 @@ function competitionTeams(event:any){
   const away=cs.find((x:any)=>x.homeAway==='away');
   return {home,away,competition:comp};
 }
+function networkForEvent(event:any){
+  const c=event?.competitions?.[0]||{};
+  const broadcasts=(c.broadcasts||[]).flatMap((b:any)=>b.names||[]);
+  const geo=(c.geoBroadcasts||[]).filter((b:any)=>['TV','Streaming'].includes(b.type?.shortName)).map((b:any)=>b.media?.shortName);
+  return [...broadcasts,...geo,c.broadcast,event?.broadcast].find((x:any)=>typeof x==='string'&&x.trim())||null;
+}
 function teamNames(c:any){
   const t=c?.team||{};
   return [t.displayName,t.shortDisplayName,t.name,t.abbreviation,t.location].filter(Boolean).map(norm);
@@ -100,7 +106,7 @@ Deno.serve(async req=>{
     const collegeDates=games.filter((g:any)=>g.sport==='college').map((g:any,i:number)=>new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(g.kickoff_at)));
     const nflDates=games.filter((g:any)=>g.sport==='nfl').map((g:any)=>new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(g.kickoff_at)));
     const [collegeEvents,nflEvents]=await Promise.all([scoreboard('college',collegeDates),scoreboard('nfl',nflDates)]);
-    const rows=games.map((g:any)=>{const e=matchEvent(g,g.sport==='nfl'?nflEvents:collegeEvents);return {...g,...gameResult(g,e)};});
+    const rows=games.map((g:any)=>{const e=matchEvent(g,g.sport==='nfl'?nflEvents:collegeEvents);return {...g,...gameResult(g,e),network:networkForEvent(e)};});
     const participants=['Scott','Ross','Ken','Jim'];
     const snapshots=week.status==='graded'?await db(`pool_week_result_snapshots?week_id=eq.${week.id}&select=participant_name,wins,losses,pushes,points,payout`):[];
     const calculated=participants.map(name=>{
