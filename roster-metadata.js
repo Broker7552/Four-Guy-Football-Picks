@@ -22,9 +22,15 @@
   window.fgNetworkForGame=gameNetwork;
   function setNetwork(card,network){
     if(!network)return;
-    let badge=card.querySelector('.fg-network');
-    if(!badge){badge=document.createElement('span');badge.className='fg-network';card.prepend(badge);}
-    badge.textContent=network;
+    let line=card.querySelector('.fg-tv-line');
+    if(!line){
+      line=document.createElement('div');
+      line.className='fg-tv-line';
+      const kickoff=card.querySelector('.muted');
+      if(kickoff)kickoff.after(line);else card.prepend(line);
+    }
+    line.textContent='TV: '+network;
+    card.querySelector('.fg-network')?.remove();
   }
   function schedule(sport,date){
     const key=sport+':'+date;
