@@ -113,7 +113,7 @@ Deno.serve(async req=>{
       let wins=0,losses=0,pushes=0,points=0,pending=0;
       for(const g of rows){
         const p=picks.find((x:any)=>x.game_id===g.id&&x.participant_name===name);
-        if(!p){pending++;continue;} if(!g.completed){continue;} if(g.ats_winner==='Push'){pushes++;continue;} const win=p.picked_team===g.ats_winner; if(win){wins++;points+=Number(g.point_value||1);} else losses++;
+        if(!p){pending++;continue;} if(!g.completed){continue;} if(g.ats_winner==='Push'){pushes++;points+=1;continue;} const win=p.picked_team===g.ats_winner; if(win){wins++;points+=Number(g.point_value||1);} else losses++;
       }
       return {name,wins,losses,pushes,points,missing:picks.filter((x:any)=>x.participant_name===name).length<games.length};
     }).sort((a,b)=>b.points-a.points||b.wins-a.wins||a.losses-b.losses);
