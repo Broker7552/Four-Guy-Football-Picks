@@ -25,7 +25,7 @@ function pickSummary(m){
  return [['college','COLLEGE'],['nfl','NFL']].map(([sport,label])=>{
  const rows=games.filter(g=>g.sport===sport);if(!rows.length)return '';
  const abbr=team=>(sport==='nfl'?NFL_ABBR[team]:COLLEGE_ABBR[team])||String(team).replace(/[^a-zA-Z0-9 ]/g,'').split(/\s+/).filter(Boolean).map((w,i,a)=>a.length===1?w.slice(0,4):w[0]).join('').toUpperCase();
- return '<h3>'+label+'</h3><table class="dash-picks-table"><caption class="dash-sr-only">Week '+m.display+' '+label+' games, spreads and player picks</caption><colgroup><col class="dash-game-col"><col span="4"></colgroup><thead><tr><th scope="col">Game / spread</th>'+ORDER.map(n=>'<th scope="col">'+n+'</th>').join('')+'</tr></thead><tbody>'+rows.map(g=>{
+ return '<h3>'+label+'</h3><table class="dash-picks-table"><caption class="dash-sr-only">Week '+m.display+' '+label+' games, spreads and player picks</caption><colgroup><col class="dash-game-col"><col span="4"></colgroup><thead><tr><th scope="col">Game / spread</th>'+ORDER.map(n=>'<th scope="col" title="'+esc(n)+'" aria-label="'+esc(n)+'">'+esc(n[0])+'</th>').join('')+'</tr></thead><tbody>'+rows.map(g=>{
  const a=abbr(g.away_team),h=abbr(g.home_team),ambiguous=a===h;
  const spread=Number(g.spread),line=g.spread==null||!Number.isFinite(spread)?'Spread pending':g.favorite_team+' '+(spread>0?'+':'')+spread;
  return '<tr><th scope="row"><span>'+esc(g.away_team)+' @ '+esc(g.home_team)+'</span><small>'+esc(line)+'</small></th>'+ORDER.map(n=>{
