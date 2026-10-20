@@ -10,7 +10,7 @@ function totals(data){const points=Object.fromEntries(ORDER.map(n=>[n,0])),payou
  const tb=key==='world'?data.worldTiebreaker:data.tiebreaker;
  const actual=key==='world'?tb?.final_runs:tb?.al_final_runs!=null&&tb?.nl_final_runs!=null?tb.al_final_runs+tb.nl_final_runs:null;
  const prediction=n=>tb?.predictions?.find(p=>p.participant_name===n)?.predicted_runs;
- const useTie=(key==='league'||key==='world')&&tb?.locked_at&&actual!=null&&ORDER.every(n=>Number.isInteger(prediction(n)));
+ const useTie=(key==='league'||key==='world')&&(tb?.locked_at||Date.now()>=new Date(r.series[0].lock_at).getTime())&&actual!=null&&ORDER.every(n=>Number.isInteger(prediction(n)));
  const distance=n=>Math.abs(prediction(n)-actual);
  const sorted=ORDER.slice().sort((a,b)=>r.points[b]-r.points[a]||(useTie?distance(a)-distance(b):0));r.ranking=sorted;
  let i=0;while(i<sorted.length){let j=i+1;while(j<sorted.length&&r.points[sorted[j]]===r.points[sorted[i]]&&(!useTie||distance(sorted[j])===distance(sorted[i])))j++;
