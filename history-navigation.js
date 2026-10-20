@@ -53,7 +53,7 @@
     try{
       const weeks=await completedWeeks(),nums=[...new Set([...weeks.map(w=>w.week_number),1])].sort((a,b)=>b-a);
       sel.innerHTML=nums.map(n=>'<option value="'+n+'">Week '+n+'</option>').join('');
-      try{const {data,error}=await sb.functions.invoke('pool-baseball',{body:{}});if(!error&&!data?.error){const rounds={};for(const s of data.series||[])(rounds[s.round_key]??=[]).push(s);const finished=Object.entries(rounds).filter(([,series])=>series.length&&series.every(s=>s.winner_mlb_id));sel.innerHTML=finished.map(([key,series])=>'<option value="baseball:'+esc(key)+'">Baseball — '+esc(series[0].round_name)+'</option>').join('')+sel.innerHTML;}}catch{}
+      try{const {data,error}=await sb.functions.invoke('pool-baseball',{body:{}});if(!error&&!data?.error){const rounds={};for(const s of data.series||[])(rounds[s.round_key]??=[]).push(s);const finished=Object.entries(rounds).filter(([,series])=>series.length&&series.every(s=>s.winner_mlb_id)).reverse();sel.innerHTML=finished.map(([key,series])=>'<option value="baseball:'+esc(key)+'">Baseball — '+esc(series[0].round_name)+'</option>').join('')+sel.innerHTML;}}catch{}
       renderSelection(sel.value);
     }catch{sel.innerHTML='<option value="1">Week 1</option>';renderHistory(1);}
   }
