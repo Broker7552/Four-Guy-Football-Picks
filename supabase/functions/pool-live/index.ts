@@ -109,13 +109,16 @@ Deno.serve(async req=>{
     const rows=games.map((g:any)=>{const e=matchEvent(g,g.sport==='nfl'?nflEvents:collegeEvents);return {...g,...gameResult(g,e),network:networkForEvent(e)};});
     const participants=['Scott','Ross','Ken','Jim'];
     const snapshots=week.status==='graded'?await db(`pool_week_result_snapshots?week_id=eq.${week.id}&select=participant_name,wins,losses,pushes,points,payout`):[];
+    const resultPenalties=week.status==='graded'?[]:await db(`pool_week_results?week_id=eq.${week.id}&select=user_id,penalty_points`);
     const calculated=participants.map(name=>{
       let wins=0,losses=0,pushes=0,points=0,pending=0;
       for(const g of rows){
         const p=picks.find((x:any)=>x.game_id===g.id&&x.participant_name===name);
         if(!p){pending++;continue;} if(!g.completed){continue;} if(g.ats_winner==='Push'){pushes++;points+=1;continue;} const win=p.picked_team===g.ats_winner; if(win){wins++;points+=Number(g.point_value||1);} else losses++;
       }
-      return {name,wins,losses,pushes,points,missing:picks.filter((x:any)=>x.participant_name===name).length<games.length};
+      const memberId=memberRows.find((m:any)=>m.display_name===name)?.user_id;
+      const penalty=Number(resultPenalties.find((r:any)=>r.user_id===memberId)?.penalty_points||0);
+      return {name,wins,losses,pushes,points:points-penalty,penalty_points:penalty,missing:picks.filter((x:any)=>x.participant_name===name).length<games.length};
     }).sort((a,b)=>b.points-a.points||b.wins-a.wins||a.losses-b.losses);
     const standings=snapshots.length?snapshots.map((s:any)=>({name:s.participant_name,wins:s.wins,losses:s.losses,pushes:s.pushes,points:s.points,payout:Number(s.payout)})):calculated;
     return reply({week:{id:week.id,week_number:week.week_number,season:week.season,published_at:week.published_at||null},week_number:week.week_number,viewer:members[0].display_name,participants,games:rows,picks,standings,refreshed_at:new Date().toISOString()});
