@@ -22,19 +22,42 @@
   const isPrimeTimeNFL=g=>{if(g.sport!=='nfl')return false;const kickoff=easternKickoff(g);return kickoff&&(kickoff.day==='Sun'&&kickoff.hour>=19||kickoff.day==='Mon');};
   function projection(data){
     const remaining=data.games.filter(g=>!g.completed);
-    // Show scenarios after the afternoon slate, including Monday night after SNF is final.
+    // Scenarios are available once only Sunday and Monday night games remain.
     if(!remaining.length||remaining.some(g=>!isPrimeTimeNFL(g)))return '';
+    const games=remaining.filter(g=>ORDER.some(n=>pickFor(data,g.id,n)!=='—')).slice(0,6);
+    if(!games.length)return '';
     const nowPts=Object.fromEntries(ORDER.map(n=>[n,Number(data.standings.find(s=>s.name===n)?.points||0)]));
-    const currentRanked=ORDER.slice().sort((a,b)=>nowPts[b]-nowPts[a]);const currentPlace={};let cp=0;while(cp<currentRanked.length){let ce=cp+1;while(ce<currentRanked.length&&nowPts[currentRanked[ce]]===nowPts[currentRanked[cp]])ce++;const cl=(cp+1)+(cp===0?'st':cp===1?'nd':cp===2?'rd':'th');for(let j=cp;j<ce;j++)currentPlace[currentRanked[j]]=cl;cp=ce;}const scenarioGames=remaining.filter(g=>ORDER.some(n=>pickFor(data,g.id,n)!=='—')).slice(0,6);
-    const scenarios=scenarioGames.map(g=>{
+    const places=points=>{
+      const ranked=ORDER.slice().sort((a,b)=>points[b]-points[a]),place={};
+      for(let i=0;i<ranked.length;){let j=i+1;while(j<ranked.length&&points[ranked[j]]===points[ranked[i]])j++;
+        const label=(i+1)+(i===0?'st':i===1?'nd':i===2?'rd':'th');
+        for(let k=i;k<j;k++)place[ranked[k]]=label;i=j;
+      }
+      return place;
+    };
+    const currentPlace=places(nowPts);
+    const totals=outcomes=>{
+      const pts=Object.fromEntries(ORDER.map(n=>[n,nowPts[n]+outcomes.reduce((sum,{game,team})=>sum+(pickFor(data,game.id,n)===team?gameWeight(game):0),0)]));
+      const place=places(pts);
+      return ORDER.map(n=>'<span><b>'+esc(n)+'</b> '+pts[n]+' pts <em data-place="'+place[n]+'">'+place[n]+' <small>('+currentPlace[n]+')</small></em></span>').join('');
+    };
+    const combined=games.length===2?'<h4 class="scenario-title">Both games together</h4><p class="muted">These totals include the Sunday and Monday results.</p><div class="scenario-list">'+
+      [games[0].away_team,games[0].home_team].flatMap(first=>
+        [games[1].away_team,games[1].home_team].map(second=>
+          '<div class="scenario-game"><b>Sunday: '+esc(first)+' · Monday: '+esc(second)+'</b><div class="scenario-totals">'+totals([{game:games[0],team:first},{game:games[1],team:second}])+'</div></div>'
+        )
+      ).join('')+'</div>':'';
+    const individual=games.map(g=>{
       const sides=[g.away_team,g.home_team].map(team=>{
         const helped=ORDER.filter(n=>pickFor(data,g.id,n)===team),w=gameWeight(g);
-        const scenarioPts=Object.fromEntries(ORDER.map(n=>[n,nowPts[n]+(helped.includes(n)?w:0)]));const ranked=ORDER.slice().sort((a,b)=>scenarioPts[b]-scenarioPts[a]);const place={};let p=0;while(p<ranked.length){let e=p+1;while(e<ranked.length&&scenarioPts[ranked[e]]===scenarioPts[ranked[p]])e++;const label=(p+1)+(p===0?'st':p===1?'nd':p===2?'rd':'th');for(let j=p;j<e;j++)place[ranked[j]]=label;p=e;}const totals=ORDER.map(n=>'<span><b>'+esc(n)+'</b> '+scenarioPts[n]+' pts <em data-place="'+place[n]+'">'+place[n]+' <small>('+currentPlace[n]+')</small></em></span>').join('');
-        return '<div class="scenario-side"><div><b>'+esc(team)+' covers:</b> '+(helped.length?esc(helped.join(', ')):'No one')+' gains '+w+' pt'+(w===1?'':'s')+'</div><div class="scenario-totals">'+totals+'</div></div>';
+        return '<div class="scenario-side"><div><b>'+esc(team)+' covers:</b> '+(helped.length?esc(helped.join(', ')):'No one')+' gains '+w+' pt'+(w===1?'':'s')+'</div><div class="scenario-totals">'+totals([{game:g,team}])+'</div></div>';
       }).join('');
       return '<div class="scenario-game"><b>'+esc(g.away_team)+' @ '+esc(g.home_team)+'</b>'+sides+'</div>';
     }).join('');
-    return scenarios?'<div class="projection-box"><h3>Remaining Game Scenarios</h3><p class="muted">How each remaining result changes the weekly point totals.</p><div class="scenario-list">'+scenarios+'</div></div>':'';
+    return '<div class="projection-box"><h3>Remaining Game Scenarios</h3>'+
+      (combined||'<p class="muted">How each remaining result changes the weekly point totals.</p>')+
+      (combined?'<h4 class="scenario-title">One game at a time</h4><p class="muted">Each result below starts from the current score and excludes the other game.</p>':'')+
+      '<div class="scenario-list">'+individual+'</div></div>';
   }
   function render(data){
     const n=data.week_number||data.week?.week_number||window.fgLiveWeekNumber||'';document.getElementById('live-week-title').textContent='Week '+n+(window.fgLiveIsFinal?' Final':' Live');document.getElementById('live-week-status').textContent=window.fgLiveIsFinal?'Final Week '+n+' results.':'Published Week '+n+' picks · scores refresh automatically about every minute.';
