@@ -55,9 +55,8 @@
       return '<div class="scenario-game"><b>'+esc(g.away_team)+' @ '+esc(g.home_team)+'</b>'+sides+'</div>';
     }).join('');
     return '<div class="projection-box"><h3>Remaining Game Scenarios</h3>'+
-      (combined||'<p class="muted">How each remaining result changes the weekly point totals.</p>')+
-      (combined?'<h4 class="scenario-title">One game at a time</h4><p class="muted">Each result below starts from the current score and excludes the other game.</p>':'')+
-      '<div class="scenario-list">'+individual+'</div></div>';
+      (combined||'<p class="muted">How the remaining result changes the weekly point totals.</p><div class="scenario-list">'+individual+'</div>')+
+      '</div>';
   }
   function render(data){
     const n=data.week_number||data.week?.week_number||window.fgLiveWeekNumber||'';document.getElementById('live-week-title').textContent='Week '+n+(window.fgLiveIsFinal?' Final':' Live');document.getElementById('live-week-status').textContent=window.fgLiveIsFinal?'Final Week '+n+' results.':'Published Week '+n+' picks · scores refresh automatically about every minute.';
