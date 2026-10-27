@@ -109,7 +109,7 @@ Deno.serve(async req=>{
     const rows=games.map((g:any)=>{const e=matchEvent(g,g.sport==='nfl'?nflEvents:collegeEvents);return {...g,...gameResult(g,e),network:networkForEvent(e)};});
     const participants=['Scott','Ross','Ken','Jim'];
     const snapshots=week.status==='graded'?await db(`pool_week_result_snapshots?week_id=eq.${week.id}&select=participant_name,wins,losses,pushes,points,payout`):[];
-    const resultPenalties=week.status==='graded'?[]:await db(`pool_week_results?week_id=eq.${week.id}&select=user_id,penalty_points`);
+    const resultPenalties=await db(`pool_week_results?week_id=eq.${week.id}&select=user_id,penalty_points`);
     const calculated=participants.map(name=>{
       let wins=0,losses=0,pushes=0,points=0,pending=0;
       for(const g of rows){
