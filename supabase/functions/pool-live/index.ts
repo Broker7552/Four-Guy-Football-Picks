@@ -90,8 +90,10 @@ Deno.serve(async req=>{
     const weeks=await db(`pool_weeks?season=eq.2026&week_number=eq.${weekNumber}&select=*`);
     const week=weeks[0]; if(!week) return reply({error:'Week not found'},404);
     if(!['published','open','picks_open','graded'].includes(week.status)) return reply({error:'Week picks are not published yet'},409);
-    // Resolve unanimous picks once after the deadline before exposing live picks.
-    if(week.picks_due_at && (Date.now()>=new Date(week.picks_due_at).getTime() || week.picks_closed_early) && week.status!=='graded'){
+    // Match the pool_picks read policy: no player choices or derived standings
+    // leave this privileged endpoint until the configured reveal time.
+    const picksRevealed=!!week.picks_visible_at && Date.now()>=Date.parse(week.picks_visible_at);
+    if(picksRevealed && week.picks_due_at && (Date.now()>=new Date(week.picks_due_at).getTime() || week.picks_closed_early) && week.status!=='graded'){
       const flip=await fetch(url+'/rest/v1/rpc/apply_pool_anti_clone_flips',{
         method:'POST',headers:h,body:JSON.stringify({p_week_id:week.id}),signal:AbortSignal.timeout(15000)
       });
@@ -100,7 +102,7 @@ Deno.serve(async req=>{
     const games=await db(`pool_games?week_id=eq.${week.id}&selected_for_pool=eq.true&select=id,sport,home_team,away_team,favorite_team,spread,point_value,kickoff_at,venue&order=kickoff_at`);
     const memberRows=await db(`pool_members?select=user_id,display_name`);
     const ids=games.map((g:any)=>g.id).join(',')||'0';
-    const rawPicks=await db(`pool_picks?game_id=in.(${ids})&select=game_id,user_id,picked_team`);
+    const rawPicks=picksRevealed?await db(`pool_picks?game_id=in.(${ids})&select=game_id,user_id,picked_team`):[];
     const picks=rawPicks.map((p:any)=>({game_id:p.game_id,participant_name:memberRows.find((m:any)=>m.user_id===p.user_id)?.display_name||'',picked_team:p.picked_team})).filter((p:any)=>p.participant_name);
     const dates=games.map((g:any)=>new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(g.kickoff_at)));
     const collegeDates=games.filter((g:any)=>g.sport==='college').map((g:any,i:number)=>new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(g.kickoff_at)));
@@ -108,8 +110,8 @@ Deno.serve(async req=>{
     const [collegeEvents,nflEvents]=await Promise.all([scoreboard('college',collegeDates),scoreboard('nfl',nflDates)]);
     const rows=games.map((g:any)=>{const e=matchEvent(g,g.sport==='nfl'?nflEvents:collegeEvents);return {...g,...gameResult(g,e),network:networkForEvent(e)};});
     const participants=['Scott','Ross','Ken','Jim'];
-    const snapshots=week.status==='graded'?await db(`pool_week_result_snapshots?week_id=eq.${week.id}&select=participant_name,wins,losses,pushes,points,payout`):[];
-    const resultPenalties=await db(`pool_week_results?week_id=eq.${week.id}&select=user_id,penalty_points`);
+    const snapshots=picksRevealed&&week.status==='graded'?await db(`pool_week_result_snapshots?week_id=eq.${week.id}&select=participant_name,wins,losses,pushes,points,payout`):[];
+    const resultPenalties=picksRevealed?await db(`pool_week_results?week_id=eq.${week.id}&select=user_id,penalty_points`):[];
     const calculated=participants.map(name=>{
       let wins=0,losses=0,pushes=0,points=0,pending=0;
       for(const g of rows){
