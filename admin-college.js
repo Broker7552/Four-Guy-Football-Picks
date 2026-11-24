@@ -1,4 +1,4 @@
-/* Weekly college selection only. Existing login, picks and NFL code is unchanged. */
+/* Weekly college selection and automatic NFL import. */
 (() => {
   const el=id=>document.getElementById(id);
   let state=null, selected=new Set(), busy=false, dirty=false, generation=0;
@@ -102,8 +102,8 @@
     if(!state || state.week.status==='setup') return;
     const weekNumber=state.week.week_number;
     if(!confirm('Finalize Week '+weekNumber+' and prepare Week '+(weekNumber+1)+'? Week '+weekNumber+' will be locked as Historical. The new week will remain in Setup and will NOT be published.')) { message('Nothing changed.'); return; }
-    const {week}=await api({action:'prepare_next'});await listWeeks(week.id);
-    message('Week '+weekNumber+' finalized. Week '+week.week_number+' is ready for setup and is not published.');
+    const {week,nfl_count,nfl_warning}=await api({action:'prepare_next'});await listWeeks(week.id);
+    message('Week '+weekNumber+' finalized. Week '+week.week_number+' is ready for setup and is not published. '+(nfl_warning?'NFL import will retry when you publish: '+nfl_warning:nfl_count+' NFL games loaded.'));
   }));
   el('college-save').addEventListener('click',()=>task(async()=>{await save();render();message('Draft saved. Current Picks has not changed.');}));
   el('college-refresh').addEventListener('click',()=>task(async()=>{
@@ -131,7 +131,7 @@
     const games=state.draft.candidates.filter(g=>selected.has(g.id));
     if(games.some(g=>g.issue || !g.kickoff_at || !g.favorite_team || g.spread===null)) throw new Error('Deselect or resolve games marked unavailable before publishing.');
     if(!state.draft.refreshed_at || Date.now()-Date.parse(state.draft.refreshed_at)>86400000) throw new Error('Refresh the games before publishing.');
-    el('college-preview-text').textContent='Publish '+selected.size+' college games for Week '+state.week.week_number+'? These spreads will be fixed and the games will appear on Current Picks. '+state.nfl_count+' selected NFL games will remain unchanged.';
+    el('college-preview-text').textContent='Publish '+selected.size+' college games for Week '+state.week.week_number+'? These spreads will be fixed and the games will appear on Current Picks. '+(state.nfl_count?state.nfl_count+' NFL games are already loaded.':'The full NFL schedule and spreads will be imported automatically before publication.');
     const list=el('college-preview-games');list.replaceChildren();
     for(const game of games) {const li=document.createElement('li');li.textContent=game.away_team+' @ '+game.home_team+' · '+time(game.kickoff_at)+' · '+game.favorite_team+' '+game.spread;list.append(li);}
     el('college-preview').hidden=false;message('Review the games below, then confirm publication.');
@@ -141,7 +141,7 @@
   el('college-clear').addEventListener('click',()=>{el('college-conference').value='All';el('college-ranked').value='all';el('college-search').value='';el('college-verified').checked=false;el('college-selected-only').checked=false;el('college-sort').value='featured';render();});
   el('college-confirm').addEventListener('click',()=>task(async()=>{
     await api({action:state.revision?'revision_publish':'publish',week_id:state.week.id,version:state.draft.version,...(state.revision?{token:revisionReview?.token,acknowledge_picks:el('college-ack-picks').checked}:{})});
-    await listWeeks(state.week.id);message('College games published.');
+    await listWeeks(state.week.id);message('College and NFL games published.');
   }));
 
   el('college-edit-published').addEventListener('click',()=>task(async()=>{
