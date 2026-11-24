@@ -1,6 +1,7 @@
 import { fetchCandidates } from './providers.mjs';
 import { revisionAction } from './revision.mjs';
 import { fetchMetadata } from './metadata.mjs';
+import { fetchNflGames } from './nfl.mjs';
 
 const cors={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization, x-client-info, apikey, content-type','Access-Control-Allow-Methods':'POST, OPTIONS'};
 const reply=(body,status=200)=>new Response(JSON.stringify(body),{status,headers:{...cors,'Content-Type':'application/json','Cache-Control':'no-store'}});
@@ -34,11 +35,32 @@ export async function handle(req, env=Deno.env.get, fetcher=fetch) {
     if(input.action==='test_options') return reply({participants:['Scott','Ross','Ken','Jim'],weeks:(await db('pool_weeks?select=*&order=season.desc,week_number.desc')).filter(w=>w.week_number>1 && ['published','open','picks_open'].includes(w.status))});
     if(input.action==='list') return reply({weeks:await db('pool_weeks?select=*&order=season.desc,week_number.desc')});
     const rpc=(action,payload={})=>db('rpc/manage_college_draft',{p_action:action,p_actor:user.id,p_week_id:input.week_id ?? null,p_version:input.version ?? null,p_payload:payload});
-    if(input.action==='prepare_next') return reply({week:await rpc('prepare_next')});
+    async function importNfl(week) {
+      const existing=await db('pool_games?week_id=eq.'+week.id+'&sport=eq.nfl&select=id');
+      if(existing.length) return existing.length;
+      const games=await fetchNflGames(week,env,fetcher);
+      const response=await fetcher(url+'/rest/v1/pool_games',{
+        method:'POST',headers:{apikey:key,Authorization:'Bearer '+key,'Content-Type':'application/json',Prefer:'return=representation'},
+        body:JSON.stringify(games),signal:AbortSignal.timeout(20000)
+      });
+      if(!response.ok){const problem=await response.json().catch(()=>({}));throw new Error(problem.message||'Unable to import NFL games');}
+      const inserted=await response.json();
+      if(inserted.length!==games.length) throw new Error('NFL import was incomplete');
+      return inserted.length;
+    }
+    if(input.action==='prepare_next') {
+      const week=await rpc('prepare_next');
+      try {return reply({week,nfl_count:await importNfl(week)});}
+      catch(error){return reply({week,nfl_warning:error instanceof Error?error.message:'NFL import unavailable'});}
+    }
     if(!Number.isSafeInteger(input.week_id)) return reply({error:'Choose a week'},400);
     const weeks=await db('pool_weeks?id=eq.'+input.week_id+'&select=*');
     const week=weeks[0];
     if(!week) return reply({error:'Week not found'},404);
+    if(input.action==='nfl_import') {
+      if(week.status!=='setup' || !week.picks_due_at || Date.now()>=Date.parse(week.picks_due_at)) return reply({error:'Choose an upcoming setup week'},409);
+      return reply({nfl_count:await importNfl(week)});
+    }
     if(input.action==='manual_get') {
       const games=await db('pool_games?week_id=eq.'+week.id+'&published=eq.true&selected_for_pool=eq.true&select=id,home_team,away_team,favorite_team,spread&order=kickoff_at');
       // The administrator was checked above; keep private selections behind this endpoint.
@@ -75,7 +97,10 @@ export async function handle(req, env=Deno.env.get, fetcher=fetch) {
       return reply({draft:await rpc('refresh',{candidates})});
     }
     if(input.action==='save') return reply({draft:await rpc('save',{selected_ids:input.selected_ids})});
-    if(input.action==='publish') return reply({draft:await rpc('publish')});
+    if(input.action==='publish') {
+      const nfl_count=await importNfl(week);
+      return reply({draft:await rpc('publish'),nfl_count});
+    }
     return reply({error:'Unknown action'},400);
   } catch(error) {
     // Never log request URLs, Authorization headers, keys, or provider bodies.
