@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {buildCandidates,fetchCandidates} from '../supabase/functions/college-admin/providers.mjs';
 const now=Date.parse('2026-09-14T12:00:00Z');
 const week={season:2026,picks_due_at:'2026-09-18T04:00:00Z'};
-const teams=[{id:1,school:'Alpha',mascot:'Tigers',alternateNames:[]},{id:2,school:'Beta',mascot:'Bears',alternateNames:[]}];
+const teams=[{id:1,school:'Alpha',mascot:'Tigers',alternateNames:[],classification:'fbs'},{id:2,school:'Beta',mascot:'Bears',alternateNames:[],classification:'fbs'}];
 const game={id:1,homeId:1,awayId:2,homeTeam:'Alpha',awayTeam:'Beta',startDate:'2026-09-19T23:30:00Z',startTimeTBD:false,completed:false};
 const event={id:'odds1',home_team:'Alpha Tigers',away_team:'Beta Bears',commence_time:game.startDate,bookmakers:[{key:'draftkings',last_update:new Date(now).toISOString(),markets:[{key:'spreads',outcomes:[{name:'Alpha Tigers',point:-3.5},{name:'Beta Bears',point:3.5}]}]}]};
 const build=(games=[game],events=[event],teamList=teams,previous=[])=>buildCandidates(games,teamList,events,week,previous,now);
