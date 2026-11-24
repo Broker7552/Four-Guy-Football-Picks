@@ -21,7 +21,7 @@ Schedule: CFBD regular-season games in the four-day window beginning at the conf
 
 Unavailable/stale lines, TBD or conflicting kickoff times, ambiguous matches, and pick'em games are shown but cannot be published. Pick'em requires a separate decision about the existing automatic-favorite rule. Provider coverage and early-week line availability depend on the feeds; verify live responses after configuring the keys.
 
-NFL rows are never inserted, updated or deleted by this college-only feature. The UI reports the number already selected for that week. The inspected repository did not contain an NFL import service; this change does not add one. Existing NFL rows and their selection/publication flags are preserved.
+Preparing the next week attempts to import the complete NFL schedule from ESPN and DraftKings spreads from The Odds API. If a line is unavailable, setup continues with a warning and publication retries the import. Publication will not proceed until every scheduled NFL game has a valid line; existing NFL rows are preserved. The import uses the pool's pick deadline and includes games through Monday night. The Thanksgiving Week 13 exception starts Wednesday evening, so it also includes Wednesday, Thursday, and Friday games. Sunday night and Monday night games are worth two points.
 
 ## Validation
 
